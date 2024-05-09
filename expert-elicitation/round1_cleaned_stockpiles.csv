@@ -1,0 +1,11 @@
+id,country,sp_product,sp_yearly,sp_lb,sp_ub,sp_av,sp_conf,percentage
+legol,kaz,horn,increasing,200,950,380,4,0
+samwi,mal,horn,fluctuating,5,5,5,9,90
+samwi,mal,chippings,fluctuating,15,15,15,9,90
+ganda,mon,horn,decreasing,5,10,7,5,0
+arwen,rus,products,increasing,20,100,50,4,0
+gimli,uzb,horn,decreasing,1,100,89,8,70
+arago,kaz,horn,increasing,3000,30000,16500,7,60
+merry,chi,horn,increasing,24413,100000,50000,7,20
+pippi,sin,products,decreasing,NA,20000,NA,3,NA
+legol,kaz,horn,increasing,200,950,380,4,0

@@ -1,0 +1,29 @@
+id,exporter,importer,flow_product,yearly_flow,flow_lb,flow_ub,flow_av,conf
+frodo,mon,chi,horn,decreasing,2,19,19,3
+frodo,chi,sin,horn,decreasing,NA,NA,NA,NA
+galad,kaz,kyr,horn,decreasing,1167,3000,2000,3
+galad,kyr,chi,horn,decreasing,1167,3000,2000,3
+samwi,chi,mal,chippings,fluctuating,14,14,14,9
+samwi,mon,mal,horn,fluctuating,1,1,1,9
+samwi,mon,mal,chippings,fluctuating,1,1,1,9
+samwi,mon,mal,powder,fluctuating,1,1,1,9
+samwi,rus,mal,horn,fluctuating,1,1,1,9
+samwi,rus,mal,chippings,fluctuating,1,1,1,9
+samwi,rus,mon,powder,fluctuating,1,1,1,9
+ganda,mon,chi,horn,decreasing,10,20,15,4
+arwen,rus,chi,horn,increasing,60,400,175,7
+arwen,kaz,rus,horn,increasing,60,400,175,7
+bilbo,kaz,kyr,horn,increasing,40,3000,1000,6
+bilbo,kaz,chi,horn,fluctuating,17,5000,1000,7
+bilbo,kaz,rus,horn,fluctuating,1.6,NA,NA,NA
+gimli,uzb,kaz,horn ,decreasing,1,37,28,10
+arag,kaz,chi,powder,fluctuating,2000,10000,5000,8
+eowyn,uzb,kaz,horn,decreasing,1,89,50,7
+eowyn,kaz,uzb,horn ,decreasing,2,57,20,5
+legol,kaz,rus,horn,increasing,2,380,95,6
+legol,rus,chi,horn,fluctuating,2,855,100,5
+legol,kaz,chi,horn,fluctuating,200,1800,475,6
+merry,vie,chi,horn,fluctuating,250,800,500,7
+shelo,kyr,chi,horn,fluctuating ,100,1000,500,1
+shelo,kaz,chi,horn,fluctuating,200,2000,1000,1
+shelo,rus,chi,horn,fluctuating,100,500,250,1
