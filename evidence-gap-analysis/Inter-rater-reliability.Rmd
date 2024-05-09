@@ -1,0 +1,104 @@
+---
+title: "Inter-rater Reliability Tests"
+author: "Student No. 1336616"
+date: "2024-04-12"
+output: html_document
+---
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning = FALSE, message = FALSE}
+# Coding for Inter-rater reliability test
+# 28/02/2024
+
+# Load the 'irr' package for Cohen's kappa calculation
+library(irr)
+library(dplyr)
+library(tidyverse)
+library(kableExtra)
+
+
+## Calculate Pairwise Source Reliability 
+
+# Input the scores for the raters for Source Reliability 
+HZC_SRel <- c(1, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3)
+VIV_SRel <- c(1, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3) 
+REA_SRel <- c(1, 3, 3, 3, 3, 3, 3, 3, 2, 2, 3, 3)
+
+# Source reliability: Ruth and Hanzhu 
+SRel_HZC_REA <- kappa2(data.frame(HZC_SRel, REA_SRel), "unweighted")
+print(SRel_HZC_REA) # 0.765
+
+# Source reliability: Hanzhu and Irina 
+SRel_HZC_VIV <- kappa2(data.frame(HZC_SRel, VIV_SRel), "unweighted")
+print(SRel_HZC_VIV) # 1
+
+# Source reliability: Irina and Ruth 
+SRel_REA_VIV <- kappa2(data.frame(REA_SRel, VIV_SRel), "unweighted")
+print(SRel_REA_VIV) # 0.765
+
+# Input for scores for the raters for Information Relevance 
+HZC_IRelv <- c(3, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2)
+VIV_IRelv <- c(3, 1, 3, 3, 3, 3, 3, 2, 3, 3, 3, 2)
+REA_IRelv <- c(3, 1, 3, 3, 3, 3, 3, 3, 3, 2, 3, 2)
+
+# Information relevance: Ruth and Hanzhu 
+IRelv_HZC_REA <- kappa2(data.frame(HZC_IRelv, REA_IRelv), "unweighted")
+print(IRelv_HZC_REA) # 0.765
+
+# Information relevance: Hanzhu and Irina 
+IRelv_HZC_VIV <- kappa2(data.frame(HZC_IRelv, VIV_IRelv), "unweighted")
+print(IRelv_HZC_VIV) # 0.765
+
+# Information Relevance: Irina and Ruth 
+IRelv_REA_VIV <- kappa2(data.frame(REA_IRelv, VIV_IRelv), "unweighted")
+print(IRelv_REA_VIV) # 0.586
+
+
+# Input the scores for the raters for Information Reliability 
+HZC_IRelb <- c(2, 3, 3, 3, 3, 3, 2, 3, 3, 2, 3, 3)
+VIV_IRelb <- c(2, 3, 3, 3, 3, 2, 2, 3, 2, 2, 3, 3) 
+REA_IRelb <- c(2, 3, 3, 3, 2, 2, 2, 3, 3, 2, 3, 3)
+
+# Information reliability: Ruth and Hanzhu 
+IRelb_HZC_REA <- kappa2(data.frame(HZC_IRelb, REA_IRelb), "unweighted")
+print(IRelb_HZC_REA) # 0.636
+
+# Information relevance: Hanzhu and Irina 
+IRelb_HZC_VIV <- kappa2(data.frame(HZC_IRelb, VIV_IRelb), "unweighted")
+print(IRelb_HZC_VIV) # 0.636
+
+# Information relevance: Irina and Ruth
+IRelb_REA_VIV <- kappa2(data.frame(REA_IRelb, VIV_IRelb), "unweighted")
+print(IRelb_REA_VIV) # 0.657
+
+
+# Create a data frame with the kappa values and row names
+IRR_summaries <- data.frame(
+  `Source reliability` = c("0.765**", "1**", "0.765**"),
+  `Information relevance` = c("0.765**", "0.765**", "0.586*"),
+  `Information reliability` = c("0.636*", "0.636*", "0.657*")
+)
+
+# Set the row names
+row.names(IRR_summaries) <- c("HZC-REA", "HZC-VIV", "VIV-REA")
+
+# Print the summary table
+print(IRR_summaries)
+# Modify the column names
+modified_colnames <- gsub("\\.", " ", colnames(IRR_summaries))
+
+# Generate HTML table with modified column names
+html_table <- IRR_summaries %>% 
+  knitr::kable(format = "html", row.names = TRUE, caption = "<b>Table 1: A summary of pairwise inter-rater reliability scores between collaborators HZC, VIV, and REA.</b>  The inter-rater reliability test (Cohen’s Kappa coefficient) ranges from 0 (no agreement) to 1 (perfect agreement) between more than two raters. Scores greater than 0.75** are considered to reflect strong agreement beyond chance, and values between 0.5-0.7* to be satisfactory agreement by chance. ") %>%
+  kableExtra::kable_styling(full_width = FALSE) %>% 
+  add_header_above(c("Collaborator pairs" = 1, modified_colnames))
+
+html_table
+```
+
+
+
