@@ -1,0 +1,921 @@
+---
+title: "Round 1 Code"
+author: "Student No. 1336616"
+date: "2024-01-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. Setup 
+## Load libraries
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(ggplot2) 
+library(dplyr)
+library(RColorBrewer)
+library(ggimage)
+library(grid)
+library(gridExtra)
+library(patchwork)
+```
+
+## Set up colours 
+```{r}
+palette_name <- "Set3"
+num_colors <- 12 
+my_palette <- brewer.pal(num_colors, palette_name)
+custom_color <- "#FFFFFF" 
+my_palette <- c(my_palette, custom_color)
+print(my_palette)
+```
+
+## Set working directory
+```{r, message=FALSE}
+setwd()
+getwd()
+```
+## Load data 
+```{r}
+flow_round1 <- read.csv("round1_cleaned_flow.csv", header = TRUE)
+View(flow_round1)
+```
+
+## Clean data
+### Removing rows containing NAs
+```{r}
+flow_clean <- na.omit(flow_round1)
+View(flow_clean)
+```
+
+### Convert confidence estimates into percentages 
+```{r}
+flow_clean$conf <- flow_clean$conf * 10
+```
+
+## Check data 
+```{r}
+head(flow_clean)
+str(flow_clean)
+```
+
+# 2. Creating separate dataframes for saiga product flows and visualising them
+
+
+## Kyrgysztan to China
+### Create the dataframe
+```{r}
+kyr_chi_flow <- flow_clean %>% 
+  filter(flow_clean$exporter == "kyr" & flow_clean$importer == "chi")
+View(kyr_chi_flow)
+```
+### Calculate the arithmetic mean value 
+```{r}
+kyr_chi_mean <- kyr_chi_flow %>%
+  mutate(arith_mean = mean(kyr_chi_flow$flow_av))
+```
+### Create the graph 
+```{r}
+kyr_chi_graph <- ggplot(kyr_chi_flow, aes(x = flow_av, y = id)) +
+                 geom_segment(aes(x = flow_lb, xend = flow_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = flow_lb, xmax = flow_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'Kyrgyzstan to China') +
+                  geom_vline(xintercept = mean(kyr_chi_flow$flow_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = kyr_chi_flow$flow_ub + 100, y = kyr_chi_flow$id, vjust = -0.5,
+                  label = paste("Confidence\n stated",kyr_chi_mean$conf), 
+                    hjust = -0.2, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "#8DD3C7"),
+                    ) +
+                 xlim(0, 5000)  # Set the x-axis limits
+
+print(kyr_chi_graph)
+```
+
+
+## Mongolia to China 
+### Create the dataframe
+```{r}
+mon_chi_flow <- flow_clean %>% 
+  filter(flow_clean$exporter == "mon" & flow_clean$importer == "chi")
+View(mon_chi_flow)
+```
+### Calculate the arithmetic mean value 
+```{r}
+mon_chi_mean <- mon_chi_flow %>%
+  mutate(arith_mean = mean(mon_chi_flow$flow_av))
+```
+### Create the graph 
+```{r}
+mon_chi_graph <- ggplot(mon_chi_flow, aes(x = flow_av, y = id)) +
+                 geom_segment(aes(x = flow_lb, xend = flow_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = flow_lb, xmax = flow_ub), 
+                   height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'Mongolia to China') +
+                  geom_vline(xintercept = mean(mon_chi_flow$flow_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = mon_chi_flow$flow_ub + 10, y = mon_chi_flow$id, vjust = -0.5,
+                  label = paste("Confidence stated",mon_chi_mean$conf), 
+                    hjust = -0.2, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "#FFFFB3"),
+                    ) +
+                 xlim(0, 100)  # Set the x-axis limits
+
+print(mon_chi_graph)
+```
+
+## Kazakhstan to Kyrghyzstan
+
+### Create the dataframe
+```{r}
+kaz_kyr_flow <- flow_clean %>% 
+  filter(flow_clean$exporter == "kaz" & flow_clean$importer == "kyr")
+View(kaz_kyr_flow)
+```
+### Calculate the arithmetic mean value 
+```{r}
+kaz_kyr_mean <- kaz_kyr_flow %>%
+  mutate(arith_mean = mean(kaz_kyr_flow$flow_av))
+```
+### Create the graph 
+```{r}
+kaz_kyr_graph <- ggplot(kaz_kyr_flow, aes(x = flow_av, y = id)) +
+                 geom_segment(aes(x = flow_lb, xend = flow_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = flow_lb, xmax = flow_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'Kazakhstan to Kyrgyzstan') +
+                  geom_vline(xintercept = mean(kaz_kyr_flow$flow_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = kaz_kyr_flow$flow_ub + 100, y = kaz_kyr_flow$id,
+                  label = paste("Confidence\n stated",kaz_kyr_mean$conf), 
+                  hjust = -0.1, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "#BEBADA"),
+                    ) +
+                 xlim(0, 5000)  # Set the x-axis limits
+
+print(kaz_kyr_graph)
+```
+
+## China to Malaysia 
+
+### Create the dataframe
+```{r}
+chi_mal_flow <- flow_clean %>% 
+  filter(flow_clean$exporter == "chi" & flow_clean$importer == "mal")
+View(chi_mal_flow)
+```
+### Calculate the arithmetic mean value 
+```{r}
+chi_mal_mean <- chi_mal_flow %>%
+  mutate(arith_mean = mean(chi_mal_flow$flow_av))
+```
+### Create the graph 
+```{r}
+chi_mal_graph <- ggplot(chi_mal_flow, aes(x = flow_av, y = id)) +
+                 geom_segment(aes(x = flow_lb, xend = flow_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = flow_lb, xmax = flow_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'China to Malaysia') +
+                  geom_vline(xintercept = mean(chi_mal_flow$flow_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = chi_mal_flow$flow_ub + 10, y = chi_mal_flow$id, vjust = -0.5,
+                  label = paste("Confidence stated",chi_mal_mean$conf), 
+                    hjust = -0.2, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "#FB8072"),
+                    ) +
+                 xlim(0, 100)  # Set the x-axis limits
+
+print(chi_mal_graph)
+```
+
+
+## Mongolia to Malaysia 
+### Create the dataframe
+```{r}
+mon_mal_flow <- flow_clean %>% 
+  filter(flow_clean$exporter == "mon" & flow_clean$importer == "mal")
+View(mon_mal_flow)
+```
+### Calculate the arithmetic mean value 
+```{r}
+mon_mal_mean <- mon_mal_flow %>%
+  mutate(arith_mean = mean(mon_mal_flow$flow_av))
+```
+### Create the graph 
+```{r}
+mon_mal_graph <- ggplot(mon_mal_flow, aes(x = flow_av, y = id)) +
+                 geom_segment(aes(x = flow_lb, xend = flow_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = flow_lb, xmax = flow_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'Mongolia to Malaysia') +
+                  geom_vline(xintercept = mean(mon_mal_flow$flow_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = mon_mal_flow$flow_ub + 10, y = mon_mal_flow$id, vjust = -0.5,
+                  label = paste("Confidence stated",mon_mal_mean$conf), 
+                    hjust = -0.2, color = "black", size = 4) +
+                  theme(
+                   plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "#80B1D3"),
+                    ) +
+                 xlim(0, 100)  # Set the x-axis limits
+
+print(mon_mal_graph)
+```
+
+## Russia to Malaysia 
+### Create the dataframe
+```{r}
+rus_mal_flow <- flow_clean %>% 
+  filter(flow_clean$exporter == "rus" & flow_clean$importer == "mal")
+View(rus_mal_flow)
+```
+### Calculate the arithmetic mean value 
+```{r}
+rus_mal_mean <- rus_mal_flow %>%
+  mutate(arith_mean = mean(rus_mal_flow$flow_av))
+```
+### Create the graph 
+```{r}
+rus_mal_graph <- ggplot(rus_mal_flow, aes(x = flow_av, y = id)) +
+                 geom_segment(aes(x = flow_lb, xend = flow_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = flow_lb, xmax = flow_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'Russia to Malaysia') +
+                  geom_vline(xintercept = mean(rus_mal_flow$flow_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = rus_mal_flow$flow_ub + 10, y = rus_mal_flow$id, vjust = -0.5,
+                  label = paste("Confidence stated",rus_mal_mean$conf), 
+                    hjust = -0.2, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "#FDB462"),
+                    ) +
+                 xlim(0, 100)  # Set the x-axis limits
+
+print(rus_mal_graph)
+```
+
+## Russia to Mongolia 
+
+### Create the dataframe
+```{r}
+rus_mon_flow <- flow_clean %>% 
+  filter(flow_clean$exporter == "rus" & flow_clean$importer == "mon")
+View(rus_mon_flow)
+```
+### Calculate the arithmetic mean value 
+```{r}
+rus_mon_mean <- rus_mon_flow %>%
+  mutate(arith_mean = mean(rus_mon_flow$flow_av))
+```
+### Create the graph 
+```{r}
+rus_mon_graph <- ggplot(rus_mon_flow, aes(x = flow_av, y = id)) +
+                 geom_segment(aes(x = flow_lb, xend = flow_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = flow_lb, xmax = flow_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'Russia to Mongolia') +
+                  geom_vline(xintercept = mean(rus_mon_flow$flow_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = rus_mon_flow$flow_ub + 10, y = rus_mon_flow$id, vjust = -0.5,
+                  label = paste("Confidence stated",rus_mon_mean$conf), 
+                    hjust = -0.2, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "#B3DE69"),
+                    ) +
+                 xlim(0, 100)  # Set the x-axis limits
+
+print(rus_mon_graph)
+```
+
+
+## Russia to China 
+### Create the dataframe
+```{r}
+rus_chi_flow <- flow_clean %>% 
+  filter(flow_clean$exporter == "rus" & flow_clean$importer == "chi")
+View(rus_chi_flow)
+```
+### Calculate the arithmetic mean value 
+```{r}
+rus_chi_mean <- rus_chi_flow %>%
+  mutate(arith_mean = mean(rus_chi_flow$flow_av))
+```
+### Create the graph 
+```{r}
+rus_chi_graph <- ggplot(rus_chi_flow, aes(x = flow_av, y = id)) +
+                 geom_segment(aes(x = flow_lb, xend = flow_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = flow_lb, xmax = flow_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'Russia to China') +
+                  geom_vline(xintercept = mean(rus_chi_flow$flow_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = rus_chi_flow$flow_ub + 10, y = rus_chi_flow$id,
+                  label = paste("Confidence\n stated",rus_chi_mean$conf), 
+                    hjust = -0.2, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "#FCCDE5"),
+                    ) +
+                 xlim(0, 1200)  # Set the x-axis limits
+
+print(rus_chi_graph)
+```
+## Kazakhstan to Russia
+### Create the dataframe
+```{r}
+kaz_rus_flow <- flow_clean %>% 
+  filter(flow_clean$exporter == "kaz" & flow_clean$importer == "rus")
+View(kaz_rus_flow)
+```
+### Calculate the arithmetic mean value 
+```{r}
+kaz_rus_mean <- kaz_rus_flow %>%
+  mutate(arith_mean = mean(kaz_rus_flow$flow_av))
+```
+### Create the graph 
+```{r}
+kaz_rus_graph <- ggplot(kaz_rus_flow, aes(x = flow_av, y = id)) +
+                 geom_segment(aes(x = flow_lb, xend = flow_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = flow_lb, xmax = flow_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'Kazakhstan to Russia') +
+                  geom_vline(xintercept = mean(kaz_rus_flow$flow_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = kaz_rus_flow$flow_ub + 10, y = kaz_rus_flow$id, vjust = -0.5,
+                  label = paste("Confidence stated",kaz_rus_mean$conf), 
+                    hjust = -0.2, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "#D9D9D9"),
+                    ) +
+                 xlim(0, 1250)  # Set the x-axis limits
+
+print(kaz_rus_graph)
+```
+
+## Kazakhstan to China 
+
+### Create the dataframe
+```{r}
+kaz_chi_flow <- flow_clean %>% 
+  filter(flow_clean$exporter == "kaz" & flow_clean$importer == "chi")
+View(kaz_chi_flow)
+```
+
+### Calculate the arithmetic mean value 
+```{r}
+kaz_chi_mean <- kaz_chi_flow %>%
+  mutate(arith_mean = mean(kaz_chi_flow$flow_av))
+```
+### Create the graph 
+```{r}
+kaz_chi_graph <- ggplot(kaz_chi_flow, aes(x = flow_av, y = id)) +
+                 geom_segment(aes(x = flow_lb, xend = flow_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = flow_lb, xmax = flow_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'Kazakhstan to China') +
+                  geom_vline(xintercept = mean(kaz_chi_flow$flow_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = kaz_chi_flow$flow_ub + 10, y = kaz_chi_flow$id,
+                  label = paste("Confidence\n stated",kaz_chi_mean$conf), 
+                    hjust = -0.2, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "#BC80BD"),
+                    ) +
+                 xlim(0, 14000)  # Set the x-axis limits
+
+print(kaz_chi_graph)
+```
+
+## Uzbekistan to Kazakhstan 
+
+### Create the dataframe
+```{r}
+uzb_kaz_flow <- flow_clean %>% 
+  filter(flow_clean$exporter == "uzb" & flow_clean$importer == "kaz")
+View(uzb_kaz_flow)
+```
+
+### Calculate the arithmetic mean value 
+```{r}
+uzb_kaz_mean <- uzb_kaz_flow %>%
+  mutate(arith_mean = mean(uzb_kaz_flow$flow_av))
+```
+### Create the graph 
+```{r}
+uzb_kaz_graph <- ggplot(uzb_kaz_flow, aes(x = flow_av, y = id)) +
+                 geom_segment(aes(x = flow_lb, xend = flow_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = flow_lb, xmax = flow_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'Uzbekistan to Kazakhstan') +
+                  geom_vline(xintercept = mean(uzb_kaz_flow$flow_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = uzb_kaz_flow$flow_ub + 2, y = uzb_kaz_flow$id,
+                  label = paste("Confidence\n stated",uzb_kaz_mean$conf),
+                    hjust = -0.1, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "#CCEBC5"),
+                    ) +
+                 xlim(0, 115)  # Set the x-axis limits
+
+print(uzb_kaz_graph)
+```
+
+## Kazakhstan to Uzbekistan 
+
+### Create the dataframe
+```{r}
+kaz_uzb_flow <- flow_clean %>% 
+  filter(flow_clean$exporter == "kaz" & flow_clean$importer == "uzb")
+View(kaz_uzb_flow)
+```
+
+### Calculate the arithmetic mean value 
+```{r}
+kaz_uzb_mean <- kaz_uzb_flow %>%
+  mutate(arith_mean = mean(kaz_uzb_flow$flow_av))
+```
+### Create the graph 
+```{r}
+kaz_uzb_graph <- ggplot(kaz_uzb_flow, aes(x = flow_av, y = id)) +
+                 geom_segment(aes(x = flow_lb, xend = flow_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = flow_lb, xmax = flow_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'Kazakhstan to Uzbekistan') +
+                  geom_vline(xintercept = mean(kaz_uzb_flow$flow_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = kaz_uzb_flow$flow_ub + 2, y = kaz_uzb_flow$id,
+                  label = paste("Confidence\n stated", kaz_uzb_mean$conf), 
+                    hjust = -0.2, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "#FFED6F"),
+                    ) +
+                 xlim(0, 100)  # Set the x-axis limits
+
+print(kaz_uzb_graph)
+```
+## Vietnam to China 
+### Create the dataframe
+```{r}
+vie_chi_flow <- flow_clean %>% 
+  filter(flow_clean$exporter == "vie" & flow_clean$importer == "chi")
+View(vie_chi_flow)
+```
+### Calculate the arithmetic mean value 
+```{r}
+vie_chi_mean <- vie_chi_flow %>%
+  mutate(arith_mean = mean(vie_chi_flow$flow_av))
+```
+### Create the graph 
+```{r}
+vie_chi_graph <- ggplot(vie_chi_flow, aes(x = flow_av, y = id)) +
+                 geom_segment(aes(x = flow_lb, xend = flow_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = flow_lb, xmax = flow_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'Vietnam to China') +
+                  geom_vline(xintercept = mean(vie_chi_flow$flow_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = vie_chi_flow$flow_ub + 10, y = vie_chi_flow$id,
+                  label = paste("Confidence\n stated",vie_chi_mean$conf), 
+                    hjust = -0.2, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "#FFFF55"),
+                    ) +
+                 xlim(0, 1200)  # Set the x-axis limits
+
+print(vie_chi_graph)
+```
+
+## Aggregate graphs 
+### 0-100kg scale 
+
+```{r}
+caption1 <- textGrob("Fig. 1. Each best guess estimate is shown as an open black circle,\n with the upper and lower bounds pictured using errorbars either side. The\n dashed line represents the arithmetic mean of the best guess estimates for\n each flow. The confidence that the best guess stated by the expert sits within\n the upper and lower bounds is shown in the text adjacent to the error bars.", gp = gpar(fontsize = 20))
+
+# Set the size of the graphs 
+fig_width <- 20
+fig_height <- 20
+
+flow_graphs1 <- grid.arrange(mon_chi_graph, chi_mal_graph, mon_mal_graph, rus_mal_graph, rus_mon_graph, uzb_kaz_graph, kaz_uzb_graph, caption1, ncol = 2, nrow = 4, heights = c(0.25, 0.25, 0.25, 0.25), widths = c(1, 1), top = textGrob("Figure 1. Average yearly saiga flows (kg) between major range, transit and end-consumer countries\n from 2012 to 2022 on the 0-100kg scale", x = 0.5, y = 0.15, gp = gpar(fontsize = 30, fontface = "bold")))
+
+
+# Combine the graphs and the caption
+flow_graphs1 <- arrangeGrob(flow_graphs1)
+print(flow_graphs1)
+
+# Save the grid of graphs as an image file
+ggsave(filename = "flow1-100kg.png", plot = flow_graphs1, width = fig_width, height = fig_height, units = "in")
+```
+
+### 0-1000kg scale 
+
+```{r, fig.height=15, fig.width=20}
+caption2 <- textGrob("Fig. 2. Each best guess estimate is shown as an open black circle,\n with the upper and lower bounds pictured using errorbars either side. The\n dashed line represents the arithmetic mean of the best guess estimates for\n each flow. The confidence that the best guess stated by the expert sits within\n the upper and lower bounds is shown in the text adjacent to the error bars.", gp = gpar(fontsize = 20))
+
+flow_graphs2 <- grid.arrange(rus_chi_graph, kaz_rus_graph, vie_chi_graph, caption2, ncol = 2, nrow = 3, heights = c(1, 1, 0.2), widths = c(1, 1), top = textGrob("Figure 2. Average yearly saiga flows (kg) between major range, transit and end-consumer countries\n from 2012 to 2022 on the 0-1000kg scale", x = 0.5, y = 0.3, gp = gpar(fontsize = 30, fontface = "bold")))
+
+
+# Combine the graphs and the caption
+flow_graphs2 <- arrangeGrob(flow_graphs2)
+print(flow_graphs2)
+
+# Save the grid of graphs as an image file
+ggsave(filename = "flow2-1000kg.png", plot = flow_graphs2, width = 20, height = 15)
+```
+### 0-10000kg scale 
+
+```{r, fig.height=15, fig.width=20}
+caption3 <- textGrob("Fig. 3. Each best guess estimate is shown as an open black circle,\n with the upper and lower bounds pictured using errorbars either side. The\n dashed line represents the arithmetic mean of the best guess estimates for\n each flow. The confidence that the best guess stated by the expert sits within\n the upper and lower bounds is shown in the text adjacent to the error bars.", gp = gpar(fontsize = 20))
+
+flow_graphs3 <- grid.arrange(kaz_chi_graph, kaz_kyr_graph, kyr_chi_graph, caption3, ncol = 2, nrow = 3, heights = c(1, 1, 0.2), widths = c(1, 1), top = textGrob("Figure 3. Average yearly saiga flows (kg) between major range, transit and end-consumer countries\n from 2012 to 2022 on the 0-10000kg scale", x = 0.5, y = 0.3, gp = gpar(fontsize = 30, fontface = "bold")))
+
+
+# Combine the graphs and the caption
+flow_graphs3 <- arrangeGrob(flow_graphs3)
+print(flow_graphs3)
+
+# Save the grid of graphs as an image file
+ggsave(filename = "flow3-10000kg.png", plot = flow_graphs3, width = 20, height = 15)
+```
+
+
+# 3. Creating a graph for visualising stockpile estimates 
+
+## Load stockpile data 
+
+```{r}
+sp_round1 <- read.csv("round1_cleaned_stockpiles.csv", header = TRUE)
+View(sp_round1)
+```
+
+## Clean stockpile data
+### Removing rows containing NAs
+```{r}
+sp_clean <- na.omit(sp_round1)
+View(sp_clean)
+```
+### Convert confidence estimates into percentages 
+```{r}
+sp_clean$conf <- sp_clean$sp_conf * 10
+```
+
+### Check data 
+```{r}
+head(sp_clean)
+str(sp_clean)
+```
+
+## Create the dataframes for each stockpile
+
+### Kazakhstan 
+```{r}
+sp_kaz <- sp_clean %>% 
+  filter(sp_clean$country == "kaz")
+View(sp_kaz)
+```
+
+### Calculate the arithmetic mean value 
+```{r}
+sp_kaz_mean <- sp_kaz %>%
+  mutate(arith_mean = mean(sp_kaz$sp_av))
+```
+
+```{r}
+sp_kaz_graph <- ggplot(sp_kaz, aes(x = sp_av, y = id)) +
+                 geom_segment(aes(x = sp_lb, xend = sp_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = sp_lb, xmax = sp_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'Kazakhstan') +
+                  geom_vline(xintercept = mean(sp_kaz$sp_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = sp_kaz$sp_ub + 500, y = sp_kaz$id, vjust = -0.2,
+                  label = paste("Confidence\n stated",sp_kaz$conf), 
+                    hjust = -0.2, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    panel.border = element_rect(color = "black", fill = NA),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "white"),
+                    panel.grid.major = element_line(color = "grey", linetype = "solid"),
+                    panel.grid.minor = element_line(color = "grey", linetype = "solid"),
+                    ) +
+                 xlim(0, 35000)  # Set the x-axis limits
+
+print(sp_kaz_graph)
+```
+### Malaysia 
+```{r}
+sp_mal <- sp_clean %>% 
+  filter(sp_clean$country == "mal")
+View(sp_mal)
+```
+
+```{r}
+# Creating a new df for the new up and lb based on aggregate of the one expert 
+sp_mal2 <- data.frame(
+  id = "samwi",
+  sp_yearly = "fluctuating",
+  sp_lb = 20,
+  sp_ub = 20,
+  sp_av = 20,
+  percentage = 90,
+  conf = 90
+)
+
+View(sp_mal2)
+```
+
+```{r}
+sp_mal_graph <- ggplot(sp_mal2, aes(x = sp_av, y = id)) +
+                 geom_segment(aes(x = sp_lb, xend = sp_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = sp_lb, xmax = sp_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'Malaysia') +
+                  geom_vline(xintercept = mean(sp_mal2$sp_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = sp_mal2$sp_ub + 3, y = sp_mal2$id, vjust = -0.2,
+                  label = paste("Confidence\n stated",sp_mal2$conf), 
+                    hjust = -0.2, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    panel.border = element_rect(color = "black", fill = NA),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "white"),
+                    panel.grid.major = element_line(color = "grey", linetype = "solid"),
+                    panel.grid.minor = element_line(color = "grey", linetype = "solid"),
+                    ) +
+                 xlim(0, 50)  # Set the x-axis limits
+
+print(sp_mal_graph)
+```
+
+### Mongolia 
+```{r}
+sp_mon <- sp_clean %>% 
+  filter(sp_clean$country == "mon")
+View(sp_mon)
+```
+
+### Calculate the arithmetic mean value 
+```{r}
+sp_mon_mean <- sp_mon %>%
+  mutate(arith_mean = mean(sp_mon$sp_av))
+```
+
+```{r}
+sp_mon_graph <- ggplot(sp_mon, aes(x = sp_av, y = id)) +
+                 geom_segment(aes(x = sp_lb, xend = sp_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = sp_lb, xmax = sp_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'Mongolia') +
+                  geom_vline(xintercept = mean(sp_mon$sp_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = sp_mon$sp_ub + 3, y = sp_mon$id, vjust = -0.2,
+                  label = paste("Confidence\n stated",sp_mon$conf), 
+                    hjust = -0.2, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    panel.border = element_rect(color = "black", fill = NA),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "white"),
+                    panel.grid.major = element_line(color = "grey", linetype = "solid"),
+                    panel.grid.minor = element_line(color = "grey", linetype = "solid"),
+                    ) +
+                 xlim(0, 50)  # Set the x-axis limits
+
+print(sp_mon_graph)
+```
+
+### Russia 
+```{r}
+sp_rus <- sp_clean %>% 
+  filter(sp_clean$country == "rus")
+View(sp_rus)
+```
+
+### Calculate the arithmetic mean value 
+```{r}
+sp_rus_mean <- sp_rus %>%
+  mutate(arith_mean = mean(sp_rus$sp_av))
+```
+
+```{r}
+sp_rus_graph <- ggplot(sp_rus, aes(x = sp_av, y = id)) +
+                 geom_segment(aes(x = sp_lb, xend = sp_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = sp_lb, xmax = sp_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'Russia') +
+                  geom_vline(xintercept = mean(sp_rus$sp_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = sp_rus$sp_ub + 10, y = sp_rus$id, vjust = -0.2,
+                  label = paste("Confidence\n stated",sp_rus$conf), 
+                    hjust = -0.2, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    panel.border = element_rect(color = "black", fill = NA),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "white"),
+                    panel.grid.major = element_line(color = "grey", linetype = "solid"),
+                    panel.grid.minor = element_line(color = "grey", linetype = "solid"),
+                    ) +
+                 xlim(0, 150)  # Set the x-axis limits
+
+print(sp_rus_graph)
+```
+
+### Uzbekistan 
+```{r}
+sp_uzb <- sp_clean %>% 
+  filter(sp_clean$country == "uzb")
+View(sp_uzb)
+```
+
+### Calculate the arithmetic mean value 
+```{r}
+sp_uzb_mean <- sp_uzb %>%
+  mutate(arith_mean = mean(sp_uzb$sp_av))
+```
+
+```{r}
+sp_uzb_graph <- ggplot(sp_uzb, aes(x = sp_av, y = id)) +
+                 geom_segment(aes(x = sp_lb, xend = sp_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = sp_lb, xmax = sp_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'Uzbekistan') +
+                  geom_vline(xintercept = mean(sp_uzb$sp_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = sp_uzb$sp_ub + 10, y = sp_uzb$id, vjust = -0.2,
+                  label = paste("Confidence\n stated",sp_uzb$conf), 
+                    hjust = -0.2, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    panel.border = element_rect(color = "black", fill = NA),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "white"),
+                    panel.grid.major = element_line(color = "grey", linetype = "solid"),
+                    panel.grid.minor = element_line(color = "grey", linetype = "solid"),
+                    ) +
+                 xlim(0, 150)  # Set the x-axis limits
+
+print(sp_uzb_graph)
+```
+
+### China 
+
+```{r}
+sp_chi <- sp_clean %>% 
+  filter(sp_clean$country == "chi")
+View(sp_chi)
+```
+
+### Calculate the arithmetic mean value 
+```{r}
+sp_chi_mean <- sp_chi %>%
+  mutate(arith_mean = mean(sp_chi$sp_av))
+```
+
+```{r}
+sp_chi_graph <- ggplot(sp_chi, aes(x = sp_av, y = id)) +
+                 geom_segment(aes(x = sp_lb, xend = sp_ub, yend = id)) +
+                  geom_errorbarh(aes(xmin = sp_lb, xmax = sp_ub), 
+                    height = 0.2, size = 0.8, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 1) +
+                  labs(x = "Total saiga product (kg)", y = "Codename", title = 'China') +
+                  geom_vline(xintercept = mean(sp_chi$sp_av), linetype = "dashed", color = "black") +
+                  annotate("text", x = sp_chi$sp_ub + 200, y = sp_chi$id, vjust = -0.2,
+                  label = paste("Confidence\n stated",sp_chi$conf), 
+                    hjust = -0.2, color = "black", size = 4) +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    panel.border = element_rect(color = "black", fill = NA),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    axis.text.y = element_text(size = 15, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 20, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 20, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 15),  # Increase the interval label size
+                    panel.background = element_rect(fill = "white"),
+                    panel.grid.major = element_line(color = "grey", linetype = "solid"),
+                    panel.grid.minor = element_line(color = "grey", linetype = "solid"),
+                    ) +
+                 xlim(0, 125000)  # Set the x-axis limits
+
+print(sp_chi_graph)
+```
+## Aggregate graphs 
+
+```{r, fig.height=15, fig.width=20}
+caption4 <- textGrob("Fig. 4. Each best guess estimate is shown as an open black circle, with the upper and lower bounds\n pictured using errorbars either side. The dashed line represents the arithmetic mean of the best guess estimates for\n each flow. The confidence that the best guess stated by the expert sits within the upper and lower\n bounds is shown in the text adjacent to the error bars.",  gp = gpar(fontsize = 25))
+
+sp_graphs1 <- grid.arrange(sp_mon_graph, sp_mal_graph, sp_rus_graph, sp_uzb_graph, sp_kaz_graph, sp_chi_graph, ncol = 2, nrow = 4, heights = c(1, 1, 1, 0.1), widths = c(1, 1), top = textGrob("Figure 4. Average yearly saiga stockpiles (kg) between major range, transit and end-consumer\n  countries from 2012 to 2022", x = 0.5, y = 0.3, gp = gpar(fontsize = 30, fontface = "bold")))
+
+
+# Combine the graphs and the caption
+sp_graphs1 <- arrangeGrob(sp_graphs1, bottom = caption4)
+print(sp_graphs1)
+
+
+# Save the grid of graphs as an image file
+ggsave(filename = "stockpile_estimates.png", plot = sp_graphs1, width = 20, height = 22)
+```
