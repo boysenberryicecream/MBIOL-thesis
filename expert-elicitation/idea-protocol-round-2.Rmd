@@ -1,0 +1,1052 @@
+---
+title: "Round 2 Code"
+author: "Student No. 1336616"
+date: "2024-01-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# 1. Setup 
+## Load libraries
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(ggplot2) 
+library(dplyr)
+library(RColorBrewer)
+library(ggimage)
+library(grid)
+library(gridExtra)
+library(patchwork)
+library(ggpubr)
+library(kableExtra)
+```
+
+## Set working directory
+```{r, message=FALSE}
+setwd()
+getwd()
+```
+
+
+## Load data 
+```{r}
+flow_round2 <- read.csv("round2_cleaned_flow.csv", header = TRUE)
+View(flow_round2)
+```
+
+## Clean data
+### Removing rows containing NAs
+```{r}
+flow_clean2 <- na.omit(flow_round2)
+View(flow_clean2)
+```
+### Remove rows where the lower bound, upper bound, and best guess estimate are the same
+```{r}
+flow_clean2 <- flow_clean2[!(flow_clean2$flow_lb2 == flow_clean2$flow_ub2 & flow_clean2$flow_ub2 == flow_clean2$flow_av2), ]
+```
+
+### Convert confidence estimates into percentages 
+```{r}
+flow_clean2$conf2 <- flow_clean2$conf2 * 10
+```
+
+### Check data 
+```{r}
+head(flow_clean2)
+str(flow_clean2)
+View(flow_clean2)
+```
+
+## Standardise
+
+### Standardise Confidence Intervals to 80%
+```{r}
+# Standardize data to 80% CI
+std_flow_round2 <- flow_clean2 %>% 
+  mutate(std_flow_lb2 = pmax(flow_av2 - ((flow_av2 - flow_lb2) * (80 / as.numeric(conf2))), 1)) %>%
+  mutate(std_flow_ub2=flow_av2+((flow_ub2-flow_av2)*(80/as.numeric(conf2))))
+```
+
+## Plotting and Aggregating by flow
+
+### Kazahkstan to China
+
+#### Create the dataframe
+```{r}
+kaz_chi_flow2 <- std_flow_round2 %>% 
+  filter(std_flow_round2$exporter == "kaz" & std_flow_round2$importer == "chi")
+View(kaz_chi_flow2)
+```
+
+#### Calculate the aggregate mean best guess, upper and lower bounds
+
+```{r}
+
+# Calculating the group aggregates, using the standardized values
+kaz_chi_mean <- kaz_chi_flow2 %>%
+  summarise(id2 = "Mean",
+            flow_av2 = mean(flow_av2),
+            std_flow_lb2 = mean(std_flow_lb2),
+            std_flow_ub2 = mean(std_flow_ub2))
+
+View(kaz_chi_mean)
+
+# Bind to main dataframe
+kaz_chi_flow2 <- bind_rows(kaz_chi_flow2, kaz_chi_mean)
+```
+#### Create the graph 
+
+```{r}
+kaz_chi_graph <- ggplot(kaz_chi_flow2, aes(x = flow_av2, y = id2)) +
+                 geom_segment(aes(x = std_flow_lb2, xend = std_flow_ub2, yend = id2)) +
+                  geom_errorbarh(aes(xmin = std_flow_lb2, xmax = std_flow_ub2), 
+                    height = 0.2, size = 0.7, show.legend = FALSE, color = "black") +
+                  geom_point(size = 3, color = "black", fill = "grey", shape = 21, stroke = 1) +
+  geom_errorbar(data = kaz_chi_mean, aes(xmin = std_flow_lb2, xmax = std_flow_ub2, y = id2), color = "red", width = 0.2, size = 0.7) +
+    geom_point(data = kaz_chi_mean, aes(x = flow_av2, y = id2), size = 3, color = "black", fill = "red", shape = 21, stroke = 1) +
+   geom_vline(xintercept = kaz_chi_mean$flow_av2, linetype = "dashed", color = "red") +
+                  labs(x = "Total saiga product (kg)", y = "Code name ", title = 'Kazakhstan to China', tag = "E") +
+                  theme_bw() +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    plot.tag = element_text(size = 30, face = 'bold'),
+                    axis.text.y = element_text(size = 20, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 25, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 25, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 20)  # Increase the interval label size
+                    ) +
+                 xlim(0, 10000)
+
+print(kaz_chi_graph)
+```
+
+### Mongolia to China
+
+#### Create the dataframe
+```{r}
+mon_chi_flow2 <- std_flow_round2 %>% 
+  filter(std_flow_round2$exporter == "mon" & std_flow_round2$importer == "chi")
+View(mon_chi_flow2)
+```
+
+#### Calculate the aggregate mean best guess, upper and lower bounds
+
+```{r}
+
+# Calculating the group aggregates, using the standardized values
+mon_chi_mean <- mon_chi_flow2 %>%
+  summarise(id2 = "Mean",
+            flow_av2 = mean(flow_av2),
+            std_flow_lb2 = mean(std_flow_lb2),
+            std_flow_ub2 = mean(std_flow_ub2))
+
+View(mon_chi_mean)
+
+# Bind to main dataframe
+mon_chi_flow2 <- bind_rows(mon_chi_flow2, mon_chi_mean)
+```
+#### Create the graph 
+
+```{r}
+mon_chi_graph <- ggplot(mon_chi_flow2, aes(x = flow_av2, y = id2)) +
+  geom_segment(aes(x = std_flow_lb2, xend = std_flow_ub2, yend = id2)) +
+  geom_errorbarh(aes(xmin = std_flow_lb2, xmax = std_flow_ub2), 
+                 height = 0.2, size = 0.7, show.legend = FALSE, color = "black") +
+  geom_point(size = 3, color = "black", fill = "grey", shape = 21, stroke = 1) +
+  geom_errorbar(data = mon_chi_mean, aes(xmin = std_flow_lb2, xmax = std_flow_ub2, y = id2), color = "red", width = 0.2, size = 0.7) +
+  geom_point(data = mon_chi_mean, aes(x = flow_av2, y = id2), size = 3, color = "black", fill = "red", shape = 21, stroke = 1) +
+  geom_vline(xintercept = mon_chi_mean$flow_av2, linetype = "dashed", color = "red") +
+  labs(x = "Total saiga product (kg)", y = "Code name ", title = 'Mongolia to China', tag = "A") +
+  theme_bw() +
+  theme(
+    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    plot.tag = element_text(size = 30, face = 'bold'),
+                    axis.text.y = element_text(size = 20, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 25, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 25, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 20)  # Increase the interval label size
+  ) +
+  xlim(0, 25) # Set the x-axis limits
+
+
+  
+print(mon_chi_graph)
+```
+
+
+### Russia to China
+
+#### Create the dataframe
+```{r}
+rus_chi_flow2 <- std_flow_round2 %>% 
+  filter(std_flow_round2$exporter == "rus" & std_flow_round2$importer == "chi")
+View(rus_chi_flow2)
+```
+
+#### Calculate the aggregate mean best guess, upper and lower bounds
+
+```{r}
+
+# Calculating the group aggregates, using the standardized values
+rus_chi_mean <- rus_chi_flow2 %>%
+  summarise(id2 = "Mean",
+            flow_av2 = mean(flow_av2),
+            std_flow_lb2 = mean(std_flow_lb2),
+            std_flow_ub2 = mean(std_flow_ub2))
+
+View(rus_chi_mean)
+
+```
+#### Create the graph 
+
+```{r}
+rus_chi_graph <- ggplot(rus_chi_flow2, aes(x = flow_av2, y = id2)) +
+  geom_segment(aes(x = std_flow_lb2, xend = std_flow_ub2, yend = id2)) +
+  geom_errorbarh(aes(xmin = std_flow_lb2, xmax = std_flow_ub2), 
+                 height = 0.2, size = 0.7, show.legend = FALSE, color = "black") +
+  geom_point(size = 3, color = "black", fill = "grey", shape = 21, stroke = 1) +
+  geom_errorbar(data = rus_chi_mean, aes(xmin = std_flow_lb2, xmax = std_flow_ub2, y = id2), color = "red", width = 0.2, size = 0.7) +
+  geom_point(data = rus_chi_mean, aes(x = flow_av2, y = id2), size = 3, color = "black", fill = "red", shape = 21, stroke = 1) +
+  geom_vline(xintercept = rus_chi_mean$flow_av2, linetype = "dashed", color = "red") +
+  labs(x = "Total saiga product (kg)", y = "Code name ", title = 'Russia to China', tag = "I") +
+  theme_bw() +
+  theme(
+    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    plot.tag = element_text(size = 30, face = 'bold'),
+                    axis.text.y = element_text(size = 20, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 25, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 25, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 20)  # Increase the interval label size
+  ) +
+  xlim(0, 1100) # Set the x-axis limits
+
+
+
+print(rus_chi_graph)
+```
+### kyrgysztan to China
+
+#### Create the dataframe
+```{r}
+kyr_chi_flow2 <- std_flow_round2 %>% 
+  filter(std_flow_round2$exporter == "kyr" & std_flow_round2$importer == "chi")
+View(kyr_chi_flow2)
+```
+
+#### Calculate the aggregate mean best guess, upper and lower bounds
+
+```{r}
+
+# Calculating the group aggregates, using the standardized values
+kyr_chi_mean <- kyr_chi_flow2 %>%
+  summarise(id2 = "Mean",
+            flow_av2 = mean(flow_av2),
+            std_flow_lb2 = mean(std_flow_lb2),
+            std_flow_ub2 = mean(std_flow_ub2))
+
+View(kyr_chi_mean)
+
+# Bind to main dataframe
+kyr_chi_flow2 <- bind_rows(kyr_chi_flow2, kyr_chi_mean)
+```
+#### Create the graph 
+
+```{r}
+kyr_chi_graph <- ggplot(kyr_chi_flow2, aes(x = flow_av2, y = id2)) +
+  geom_segment(aes(x = std_flow_lb2, xend = std_flow_ub2, yend = id2)) +
+  geom_errorbarh(aes(xmin = std_flow_lb2, xmax = std_flow_ub2), 
+                 height = 0.2, size = 0.7, show.legend = FALSE, color = "black") +
+  geom_point(size = 3, color = "black", fill = "grey", shape = 21, stroke = 1) +
+  geom_errorbar(data = kyr_chi_mean, aes(xmin = std_flow_lb2, xmax = std_flow_ub2, y = id2), color = "red", width = 0.2, size = 0.7) +
+  geom_point(data = kyr_chi_mean, aes(x = flow_av2, y = id2), size = 3, color = "black", fill = "red", shape = 21, stroke = 1) +
+  geom_vline(xintercept = kyr_chi_mean$flow_av2, linetype = "dashed", color = "red") +
+  labs(x = "Total saiga product (kg)", y = "Code name ", title = 'Kyrgysztan to China', tag = "G") +
+  theme_bw() +
+  theme(
+    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    plot.tag = element_text(size = 30, face = 'bold'),
+                    axis.text.y = element_text(size = 20, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 25, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 25, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 20)  # Increase the interval label size
+  ) +
+  xlim(0, 5000) # Set the x-axis limits
+
+
+
+print(kyr_chi_graph)
+```
+
+
+### Vietnam to China
+
+#### Create the dataframe
+```{r}
+vie_chi_flow2 <- std_flow_round2 %>% 
+  filter(std_flow_round2$exporter == "vie" & std_flow_round2$importer == "chi")
+View(vie_chi_flow2)
+```
+
+#### Calculate the aggregate mean best guess, upper and lower bounds
+
+```{r}
+
+# Calculating the group aggregates, using the standardized values
+vie_chi_mean <- vie_chi_flow2 %>%
+  summarise(id2 = "Mean",
+            flow_av2 = mean(flow_av2),
+            std_flow_lb2 = mean(std_flow_lb2),
+            std_flow_ub2 = mean(std_flow_ub2))
+
+View(vie_chi_mean)
+
+# Bind to main dataframe
+vie_chi_flow2 <- bind_rows(vie_chi_flow2, vie_chi_mean)
+```
+#### Create the graph 
+
+```{r}
+vie_chi_graph <- ggplot(vie_chi_flow2, aes(x = flow_av2, y = id2)) +
+  geom_segment(aes(x = std_flow_lb2, xend = std_flow_ub2, yend = id2)) +
+  geom_errorbarh(aes(xmin = std_flow_lb2, xmax = std_flow_ub2), 
+                 height = 0.2, size = 0.7, show.legend = FALSE, color = "black") +
+  geom_point(size = 3, color = "black", fill = "grey", shape = 21, stroke = 1) +
+  geom_errorbar(data = vie_chi_mean, aes(xmin = std_flow_lb2, xmax = std_flow_ub2, y = id2), color = "red", width = 0.2, size = 0.7) +
+  geom_point(data = vie_chi_mean, aes(x = flow_av2, y = id2), size = 3, color = "black", fill = "red", shape = 21, stroke = 1) +
+  geom_vline(xintercept = vie_chi_mean$flow_av2, linetype = "dashed", color = "red") +
+  labs(x = "Total saiga product (kg)", y = "Code name ", title = 'Vietnam to China', tag = "H") +
+  theme_bw() +
+  theme(
+    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    plot.tag = element_text(size = 30, face = 'bold'),
+                    axis.text.y = element_text(size = 20, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 25, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 25, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 20)  # Increase the interval label size
+  ) +
+  xlim(0, 1000) # Set the x-axis limits
+
+
+
+print(vie_chi_graph)
+```
+
+### Kazakhstan to Kyrgysztan 
+
+#### Create the dataframe
+```{r}
+kaz_kyr_flow2 <- std_flow_round2 %>% 
+  filter(std_flow_round2$exporter == "kaz" & std_flow_round2$importer == "kyr")
+View(kaz_kyr_flow2)
+```
+
+#### Calculate the aggregate mean best guess, upper and lower bounds
+
+```{r}
+
+# Calculating the group aggregates, using the standardized values
+kaz_kyr_mean <- kaz_kyr_flow2 %>%
+  summarise(id2 = "Mean",
+            flow_av2 = mean(flow_av2),
+            std_flow_lb2 = mean(std_flow_lb2),
+            std_flow_ub2 = mean(std_flow_ub2))
+
+View(kaz_kyr_mean)
+
+# Bind to main dataframe
+kaz_kyr_flow2 <- bind_rows(kaz_kyr_flow2, kaz_kyr_mean)
+```
+#### Create the graph 
+
+```{r}
+kaz_kyr_graph <- ggplot(kaz_kyr_flow2, aes(x = flow_av2, y = id2)) +
+  geom_segment(aes(x = std_flow_lb2, xend = std_flow_ub2, yend = id2)) +
+  geom_errorbarh(aes(xmin = std_flow_lb2, xmax = std_flow_ub2), 
+                 height = 0.2, size = 0.7, show.legend = FALSE, color = "black") +
+  geom_point(size = 3, color = "black", fill = "grey", shape = 21, stroke = 1) +
+  geom_errorbar(data = kaz_kyr_mean, aes(xmin = std_flow_lb2, xmax = std_flow_ub2, y = id2), color = "red", width = 0.2, size = 0.7) +
+  geom_point(data = kaz_kyr_mean, aes(x = flow_av2, y = id2), size = 3, color = "black", fill = "red", shape = 21, stroke = 1) +
+  geom_vline(xintercept = kaz_kyr_mean$flow_av2, linetype = "dashed", color = "red") +
+  labs(x = "Total saiga product (kg)", y = "Code name ", title = 'Kazakhstan to Kyrgysztan', tag = "F") +
+  theme_bw() +
+  theme(
+    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    plot.tag = element_text(size = 30, face = 'bold'),
+                    axis.text.y = element_text(size = 20, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 25, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 25, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 20)  # Increase the interval label size
+  ) +
+  xlim(0, 5000) # Set the x-axis limits
+
+
+
+print(kaz_kyr_graph)
+```
+
+### Kazakhstan to Uzbekistan
+
+#### Create the dataframe
+```{r}
+kaz_uzb_flow2 <- std_flow_round2 %>% 
+  filter(std_flow_round2$exporter == "kaz" & std_flow_round2$importer == "uzb")
+View(kaz_uzb_flow2)
+```
+
+#### Calculate the aggregate mean best guess, upper and lower bounds
+
+```{r}
+
+# Calculating the group aggregates, using the standardized values
+kaz_uzb_mean <- kaz_uzb_flow2 %>%
+  summarise(id2 = "Mean",
+            flow_av2 = mean(flow_av2),
+            std_flow_lb2 = mean(std_flow_lb2),
+            std_flow_ub2 = mean(std_flow_ub2))
+
+View(kaz_uzb_mean)
+
+# Bind to main dataframe
+kaz_uzb_flow2 <- bind_rows(kaz_uzb_flow2, kaz_uzb_mean)
+```
+#### Create the graph 
+
+```{r}
+kaz_uzb_graph <- ggplot(kaz_uzb_flow2, aes(x = flow_av2, y = id2)) +
+  geom_segment(aes(x = std_flow_lb2, xend = std_flow_ub2, yend = id2)) +
+  geom_errorbarh(aes(xmin = std_flow_lb2, xmax = std_flow_ub2), 
+                 height = 0.2, size = 0.7, show.legend = FALSE, color = "black") +
+  geom_point(size = 3, color = "black", fill = "grey", shape = 21, stroke = 1) +
+  geom_errorbar(data = kaz_uzb_mean, aes(xmin = std_flow_lb2, xmax = std_flow_ub2, y = id2), color = "red", width = 0.2, size = 0.7) +
+  geom_point(data = kaz_uzb_mean, aes(x = flow_av2, y = id2), size = 3, color = "black", fill = "red", shape = 21, stroke = 1) +
+  geom_vline(xintercept = kaz_uzb_mean$flow_av2, linetype = "dashed", color = "red") +
+  labs(x = "Total saiga product (kg)", y = "Code name ", title = 'Kazakhstan to Uzbekistan', tag = "B") +
+  theme_bw() +
+  theme(
+    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    plot.tag = element_text(size = 30, face = 'bold'),
+                    axis.text.y = element_text(size = 20, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 25, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 25, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 20)  # Increase the interval label size
+  ) +
+  xlim(0, 100) # Set the x-axis limits
+
+
+
+print(kaz_uzb_graph)
+```
+
+### Kazakhstan to Russia
+
+#### Create the dataframe
+```{r}
+kaz_rus_flow2 <- std_flow_round2 %>% 
+  filter(std_flow_round2$exporter == "kaz" & std_flow_round2$importer == "rus")
+View(kaz_rus_flow2)
+```
+
+#### Calculate the aggregate mean best guess, upper and lower bounds
+
+```{r}
+
+# Calculating the group aggregates, using the standardized values
+kaz_rus_mean <- kaz_rus_flow2 %>%
+  summarise(id2 = "Mean",
+            flow_av2 = mean(flow_av2),
+            std_flow_lb2 = mean(std_flow_lb2),
+            std_flow_ub2 = mean(std_flow_ub2))
+
+View(kaz_rus_mean)
+
+# Bind to main dataframe
+kaz_rus_flow2 <- bind_rows(kaz_rus_flow2, kaz_rus_mean)
+```
+#### Create the graph 
+
+```{r}
+kaz_rus_graph <- ggplot(kaz_rus_flow2, aes(x = flow_av2, y = id2)) +
+  geom_segment(aes(x = std_flow_lb2, xend = std_flow_ub2, yend = id2)) +
+  geom_errorbarh(aes(xmin = std_flow_lb2, xmax = std_flow_ub2), 
+                 height = 0.2, size = 0.7, show.legend = FALSE, color = "black") +
+  geom_point(size = 3, color = "black", fill = "grey", shape = 21, stroke = 1) +
+  geom_errorbar(data = kaz_rus_mean, aes(xmin = std_flow_lb2, xmax = std_flow_ub2, y = id2), color = "red", width = 0.2, size = 0.7) +
+  geom_point(data = kaz_rus_mean, aes(x = flow_av2, y = id2), size = 3, color = "black", fill = "red", shape = 21, stroke = 1) +
+  geom_vline(xintercept = kaz_rus_mean$flow_av2, linetype = "dashed", color = "red") +
+  labs(x = "Total saiga product (kg)", y = "Code name ", title = 'Kazakhstan to Russia', tag = "D") +
+  theme_bw() +
+  theme(
+    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    plot.tag = element_text(size = 30, face = 'bold'),
+                    axis.text.y = element_text(size = 20, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 25, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 25, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 20)  # Increase the interval label size
+  ) +
+  xlim(0, 500) # Set the x-axis limits
+
+
+
+print(kaz_rus_graph)
+```
+
+
+### Uzbekistan to Kazakhstan
+
+#### Create the dataframe
+```{r}
+uzb_kaz_flow2 <- std_flow_round2 %>% 
+  filter(std_flow_round2$exporter == "uzb" & std_flow_round2$importer == "kaz")
+View(uzb_kaz_flow2)
+```
+
+#### Calculate the aggregate mean best guess, upper and lower bounds
+
+```{r}
+
+# Calculating the group aggregates, using the standardized values
+uzb_kaz_mean <- uzb_kaz_flow2 %>%
+  summarise(id2 = "Mean",
+            flow_av2 = mean(flow_av2),
+            std_flow_lb2 = mean(std_flow_lb2),
+            std_flow_ub2 = mean(std_flow_ub2))
+
+View(uzb_kaz_mean)
+
+# Bind to main dataframe
+uzb_kaz_flow2 <- bind_rows(uzb_kaz_flow2, uzb_kaz_mean)
+```
+#### Create the graph 
+
+```{r}
+uzb_kaz_graph <- ggplot(uzb_kaz_flow2, aes(x = flow_av2, y = id2)) +
+  geom_segment(aes(x = std_flow_lb2, xend = std_flow_ub2, yend = id2)) +
+  geom_errorbarh(aes(xmin = std_flow_lb2, xmax = std_flow_ub2), 
+                 height = 0.2, size = 0.7, show.legend = FALSE, color = "black") +
+  geom_point(size = 3, color = "black", fill = "grey", shape = 21, stroke = 1) +
+  geom_errorbar(data = uzb_kaz_mean, aes(xmin = std_flow_lb2, xmax = std_flow_ub2, y = id2), color = "red", width = 0.2, size = 0.7) +
+  geom_point(data = uzb_kaz_mean, aes(x = flow_av2, y = id2), size = 3, color = "black", fill = "red", shape = 21, stroke = 1) +
+  geom_vline(xintercept = uzb_kaz_mean$flow_av2, linetype = "dashed", color = "red") +
+  labs(x = "Total saiga product (kg)", y = "Code name ", title = 'Uzbekistan to Kazakhstan', tag = "C") +
+  theme_bw() +
+  theme(
+    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    plot.tag = element_text(size = 30, face = 'bold'),
+                    axis.text.y = element_text(size = 20, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 25, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 25, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 20)  # Increase the interval label size
+  ) +
+  xlim(0, 100) # Set the x-axis limits
+
+
+
+print(uzb_kaz_graph)
+```
+
+
+## Aggregate graphs 
+### 0-500kg scale 
+
+```{r, fig.width =20, fig.height =15}
+# Define the caption text
+caption1 <- "Figure 10: Experts' elicitation estimates for annual saiga product flows (kg) where bounds fall within 500kg. Participants present estimates with Round 2 best estimates (grey circles) and associated credible intervals (black horizontal lines). Uncertainy bars have been adjusted to reflect 80% credible intervals for each expert's response. The group mean for each flow is represented (red circle and red dotted line). The mean values for upper and lower bound estimates are also presented (red horizontal lines). The x-axes presented reflect the scales of each response and therefore differ."
+
+# Specify the desired width for wrapping
+caption_width <- 100
+
+# Split the caption text into multiple lines
+caption_lines <- strwrap(caption1, width = caption_width)
+
+# Create a text grob with wrapped caption
+caption1 <- textGrob(
+  label = paste(caption_lines, collapse = "\n"), 
+  gp = gpar(fontsize = 30, hjust = 0.5)
+)
+
+# Set the size of the graphs 
+fig_width <- 20
+fig_height <- 20
+
+flow_graphs1 <- grid.arrange(mon_chi_graph, kaz_uzb_graph, uzb_kaz_graph, kaz_rus_graph, ncol = 2, nrow = 2, top = textGrob("Figure 10. Average yearly saiga product flows (kg) between major range, transit and\n end-consumer countries from 2012 to 2022 for volumes <500kg", x = 0.5, y = 0.15, gp = gpar(fontsize = 35, fontface = "bold")))
+
+
+# Combine the graphs and the caption
+flow_graphs1 <- arrangeGrob(flow_graphs1, bottom = caption1)
+print(flow_graphs1)
+
+# Save the grid of graphs as an image file
+ggsave(filename = "flow2-500kg.png", plot = flow_graphs1, width = fig_width, height = fig_height, units = "in")
+```
+## Aggregate graphs 
+### >500kg kg scale 
+
+```{r, fig.width =20, fig.height =25}
+
+# Define the caption text
+caption2 <- "Figure 11: Experts' elicitation estimates for annual saiga product flows (kg) where bounds fall >500kg. Participants present estimates with Round 2 best estimates (grey circles) and associated credible intervals (black horizontal lines). Uncertainy bars have been adjusted to reflect 80% credible intervals for each expert's response. The group mean for each flow is represented (red circle and red dotted line). The mean values for upper and lower bound estimates are also presented (red horizontal lines). The x-axes presented reflect the scales of each response and therefore differ."
+
+
+caption_width2 <- 60
+
+# Split the caption text into multiple lines
+caption_lines2 <- strwrap(caption2, width = caption_width2)
+
+# Create a text grob with wrapped caption
+caption2 <- textGrob(
+  label = paste(caption_lines2, collapse = "\n"), 
+  gp = gpar(fontsize = 25, hjust = 0.5)
+)
+
+# Set the size of the graphs 
+fig_width <- 20
+fig_height <- 25
+
+flow_graphs2 <- grid.arrange(kaz_chi_graph, kaz_kyr_graph, kyr_chi_graph, vie_chi_graph, rus_chi_graph, caption2, ncol = 2, nrow = 3, top = textGrob("Figure 11. Average yearly saiga product flows (kg) between major range, transit and\n end-consumer countries from 2012 to 2022 for volumes >500kg", x = 0.5, y = 0.15, gp = gpar(fontsize = 35, fontface = "bold")))
+
+
+# Combine the graphs and the caption
+flow_graphs2 <- arrangeGrob(flow_graphs2)
+print(flow_graphs2)
+
+# Save the grid of graphs as an image file
+ggsave(filename = "flow2-10000kg.png", plot = flow_graphs2, width = fig_width, height = fig_height, units = "in")
+```
+
+# Creating a graph for visualising stockpile estimates 
+
+## Load stockpile data 
+
+```{r}
+sp_round2 <- read.csv("round2_cleaned_stockpiles.csv", header = TRUE)
+View(sp_round2)
+```
+
+## Clean stockpile data
+### Removing rows containing NAs
+```{r}
+sp_clean2 <- na.omit(sp_round2)
+View(sp_clean2)
+```
+### Convert confidence estimates into percentages 
+```{r}
+sp_clean2$conf2 <- sp_clean2$sp_conf2 * 10
+```
+
+### Remove rows where the lower bound, upper bound, and best guess estimate are the same
+```{r}
+sp_clean2 <- sp_clean2[!(sp_clean2$sp_lb2 == sp_clean2$sp_ub2 & sp_clean2$sp_ub2 == sp_clean2$sp_av2), ]
+```
+
+### Standardise to 80% confidence intervals 
+```{r}
+# Standardize data to 80% CI
+std_sp_round2 <- sp_clean2 %>% 
+  mutate(std_sp_lb2 = pmax(sp_av2 - ((sp_av2 - sp_lb2) * (80 / as.numeric(conf2))), 1)) %>%
+  mutate(std_sp_ub2 = sp_av2+((sp_ub2-sp_av2)*(80/as.numeric(conf2))))
+```
+
+### Check data 
+```{r}
+head(std_sp_round2)
+str(std_sp_round2)
+```
+
+## Create the dataframes for each stockpile
+
+### Kazakhstan 
+```{r}
+sp_kaz2 <- std_sp_round2 %>% 
+  filter(std_sp_round2$country == "kaz")
+View(sp_kaz2)
+```
+
+### Calculate the aggregate mean values
+```{r}
+
+# Calculating the group aggregates, using the standardized values
+sp_kaz2_mean <- sp_kaz2 %>%
+  summarise(id2 = "Mean",
+            sp_av2 = mean(sp_av2),
+            std_sp_lb2 = mean(std_sp_lb2),
+            std_sp_ub2 = mean(std_sp_ub2))
+
+View(sp_kaz2_mean)
+
+# Bind to main dataframe
+sp_kaz2 <- bind_rows(sp_kaz2, sp_kaz2_mean)
+```
+
+```{r}
+
+sp_kaz2_graph <- ggplot(sp_kaz2, aes(x = sp_av2, y = id2)) +
+  geom_segment(aes(x = std_sp_lb2, xend = std_sp_ub2, yend = id2)) +
+  geom_errorbarh(aes(xmin = std_sp_lb2, xmax = std_sp_ub2), 
+                 height = 0.2, size = 0.7, show.legend = FALSE, color = "black") +
+  geom_point(size = 3, color = "black", fill = "grey", shape = 21, stroke = 1) +
+  geom_errorbar(data = sp_kaz2_mean, aes(xmin = std_sp_lb2, xmax = std_sp_ub2, y = id2), color = "red", width = 0.2, size = 0.7) +
+  geom_point(data = sp_kaz2_mean, aes(x = sp_av2, y = id2), size = 3, color = "black", fill = "red", shape = 21, stroke = 1) +
+  geom_vline(xintercept = sp_kaz2_mean$sp_av2, linetype = "dashed", color = "red") +
+  labs(x = "Total saiga product (kg)", y = "Code name ", title = 'Kazakhstan', tag = "J") +
+                  theme(
+                    plot.margin = margin(75, 75, 75, 75, "pt"),
+                    panel.border = element_rect(color = "black", fill = NA),
+                    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+                    plot.tag = element_text(size = 30, face = 'bold'),
+                    axis.text.y = element_text(size = 20, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+                    axis.title.x = element_text(size = 25, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+                    axis.title.y = element_text(size = 25, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+                    axis.text.x = element_text(size = 20),  # Increase the interval label size
+                    panel.background = element_rect(fill = "white"),
+                    panel.grid.major = element_line(color = "grey", linetype = "solid"),
+                    panel.grid.minor = element_line(color = "grey", linetype = "solid"),
+                    ) +
+                 xlim(0, 35000)  # Set the x-axis limits
+
+print(sp_kaz2_graph)
+```
+### Mongolia  
+```{r}
+sp_mon2 <- std_sp_round2 %>% 
+  filter(std_sp_round2$country == "mon")
+View(sp_mon2)
+```
+
+### Calculate the aggregate mean values
+```{r}
+
+# Calculating the group aggregates, using the standardized values
+sp_mon2_mean <- sp_mon2 %>%
+  summarise(id2 = "Mean",
+            sp_av2 = mean(sp_av2),
+            std_sp_lb2 = mean(std_sp_lb2),
+            std_sp_ub2 = mean(std_sp_ub2))
+
+View(sp_mon2_mean)
+
+# Bind to main dataframe
+sp_mon2 <- bind_rows(sp_mon2, sp_mon2_mean)
+```
+
+```{r}
+
+sp_mon2_graph <- ggplot(sp_mon2, aes(x = sp_av2, y = id2)) +
+  geom_segment(aes(x = std_sp_lb2, xend = std_sp_ub2, yend = id2)) +
+  geom_errorbarh(aes(xmin = std_sp_lb2, xmax = std_sp_ub2), 
+                 height = 0.2, size = 0.7, show.legend = FALSE, color = "black") +
+  geom_point(size = 3, color = "black", fill = "grey", shape = 21, stroke = 1) +
+  geom_errorbar(data = sp_mon2_mean, aes(xmin = std_sp_lb2, xmax = std_sp_ub2, y = id2), color = "red", width = 0.2, size = 0.7) +
+  geom_point(data = sp_mon2_mean, aes(x = sp_av2, y = id2), size = 3, color = "black", fill = "red", shape = 21, stroke = 1) +
+  geom_vline(xintercept = sp_mon2_mean$sp_av2, linetype = "dashed", color = "red") +
+  labs(x = "Total saiga product (kg)", y = "Code name ", title = 'Mongolia', tag = "K") +
+  theme(
+    plot.margin = margin(75, 75, 75, 75, "pt"),
+    panel.border = element_rect(color = "black", fill = NA),
+    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+    plot.tag = element_text(size = 30, face = 'bold'),
+    axis.text.y = element_text(size = 20, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+    axis.title.x = element_text(size = 25, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+    axis.title.y = element_text(size = 25, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+    axis.text.x = element_text(size = 20),  # Increase the interval label size
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major = element_line(color = "grey", linetype = "solid"),
+    panel.grid.minor = element_line(color = "grey", linetype = "solid"),
+  ) +
+  xlim(0, 12)  # Set the x-axis limits
+
+print(sp_mon2_graph)
+```
+### Russia   
+```{r}
+sp_rus2 <- std_sp_round2 %>% 
+  filter(std_sp_round2$country == "rus")
+View(sp_rus2)
+```
+
+### Calculate the aggregate mean values
+```{r}
+
+# Calculating the group aggregates, using the standardized values
+sp_rus2_mean <- sp_rus2 %>%
+  summarise(id2 = "Mean",
+            sp_av2 = mean(sp_av2),
+            std_sp_lb2 = mean(std_sp_lb2),
+            std_sp_ub2 = mean(std_sp_ub2))
+
+View(sp_rus2_mean)
+
+# Bind to main dataframe
+sp_rus2 <- bind_rows(sp_rus2, sp_rus2_mean)
+```
+
+```{r}
+
+sp_rus2_graph <- ggplot(sp_rus2, aes(x = sp_av2, y = id2)) +
+  geom_segment(aes(x = std_sp_lb2, xend = std_sp_ub2, yend = id2)) +
+  geom_errorbarh(aes(xmin = std_sp_lb2, xmax = std_sp_ub2), 
+                 height = 0.2, size = 0.7, show.legend = FALSE, color = "black") +
+  geom_point(size = 3, color = "black", fill = "grey", shape = 21, stroke = 1) +
+  geom_errorbar(data = sp_rus2_mean, aes(xmin = std_sp_lb2, xmax = std_sp_ub2, y = id2), color = "red", width = 0.2, size = 0.7) +
+  geom_point(data = sp_rus2_mean, aes(x = sp_av2, y = id2), size = 3, color = "black", fill = "red", shape = 21, stroke = 1) +
+  geom_vline(xintercept = sp_rus2_mean$sp_av2, linetype = "dashed", color = "red") +
+  labs(x = "Total saiga product (kg)", y = "Code name ", title = 'Russia', tag = "L") +
+  theme(
+    plot.margin = margin(75, 75, 75, 75, "pt"),
+    panel.border = element_rect(color = "black", fill = NA),
+    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+    plot.tag = element_text(size = 30, face = 'bold'),
+    axis.text.y = element_text(size = 20, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+    axis.title.x = element_text(size = 25, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+    axis.title.y = element_text(size = 25, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+    axis.text.x = element_text(size = 20),  # Increase the interval label size
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major = element_line(color = "grey", linetype = "solid"),
+    panel.grid.minor = element_line(color = "grey", linetype = "solid"),
+  ) +
+  xlim(0, 150)  # Set the x-axis limits
+
+print(sp_rus2_graph)
+```
+### Uzbekistan
+```{r}
+sp_uzb2 <- std_sp_round2 %>% 
+  filter(std_sp_round2$country == "uzb")
+View(sp_uzb2)
+```
+
+### Calculate the aggregate mean values
+```{r}
+
+# Calculating the group aggregates, using the standardized values
+sp_uzb2_mean <- sp_uzb2 %>%
+  summarise(id2 = "Mean",
+            sp_av2 = mean(sp_av2),
+            std_sp_lb2 = mean(std_sp_lb2),
+            std_sp_ub2 = mean(std_sp_ub2))
+
+View(sp_uzb2_mean)
+
+# Bind to main dataframe
+sp_uzb2 <- bind_rows(sp_uzb2, sp_uzb2_mean)
+```
+
+```{r}
+
+sp_uzb2_graph <- ggplot(sp_uzb2, aes(x = sp_av2, y = id2)) +
+  geom_segment(aes(x = std_sp_lb2, xend = std_sp_ub2, yend = id2)) +
+  geom_errorbarh(aes(xmin = std_sp_lb2, xmax = std_sp_ub2), 
+                 height = 0.2, size = 0.7, show.legend = FALSE, color = "black") +
+  geom_point(size = 3, color = "black", fill = "grey", shape = 21, stroke = 1) +
+  geom_errorbar(data = sp_uzb2_mean, aes(xmin = std_sp_lb2, xmax = std_sp_ub2, y = id2), color = "red", width = 0.2, size = 0.7) +
+  geom_point(data = sp_uzb2_mean, aes(x = sp_av2, y = id2), size = 3, color = "black", fill = "red", shape = 21, stroke = 1) +
+  geom_vline(xintercept = sp_uzb2_mean$sp_av2, linetype = "dashed", color = "red") +
+  labs(x = "Total saiga product (kg)", y = "Code name ", title = 'Uzbekistan', tag = "M") +
+  theme(
+    plot.margin = margin(75, 75, 75, 75, "pt"),
+    panel.border = element_rect(color = "black", fill = NA),
+    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+    plot.tag = element_text(size = 30, face = 'bold'),
+    axis.text.y = element_text(size = 20, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+    axis.title.x = element_text(size = 25, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+    axis.title.y = element_text(size = 25, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+    axis.text.x = element_text(size = 20),  # Increase the interval label size
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major = element_line(color = "grey", linetype = "solid"),
+    panel.grid.minor = element_line(color = "grey", linetype = "solid"),
+  ) +
+  xlim(0, 1000)  # Set the x-axis limits
+
+print(sp_uzb2_graph)
+```
+### China
+```{r}
+sp_chi2 <- std_sp_round2 %>% 
+  filter(std_sp_round2$country == "chi")
+View(sp_chi2)
+```
+
+### Calculate the aggregate mean values
+```{r}
+
+# Calculating the group aggregates, using the standardized values
+sp_chi2_mean <- sp_chi2 %>%
+  summarise(id2 = "Mean",
+            sp_av2 = mean(sp_av2),
+            std_sp_lb2 = mean(std_sp_lb2),
+            std_sp_ub2 = mean(std_sp_ub2))
+
+View(sp_chi2_mean)
+
+# Bind to main dataframe
+sp_chi2 <- bind_rows(sp_chi2, sp_chi2_mean)
+```
+
+```{r}
+
+sp_chi2_graph <- ggplot(sp_chi2, aes(x = sp_av2, y = id2)) +
+  geom_segment(aes(x = std_sp_lb2, xend = std_sp_ub2, yend = id2)) +
+  geom_errorbarh(aes(xmin = std_sp_lb2, xmax = std_sp_ub2), 
+                 height = 0.2, size = 0.7, show.legend = FALSE, color = "black") +
+  geom_point(size = 3, color = "black", fill = "grey", shape = 21, stroke = 1) +
+  geom_errorbar(data = sp_chi2_mean, aes(xmin = std_sp_lb2, xmax = std_sp_ub2, y = id2), color = "red", width = 0.2, size = 0.7) +
+  geom_point(data = sp_chi2_mean, aes(x = sp_av2, y = id2), size = 3, color = "black", fill = "red", shape = 21, stroke = 1) +
+  geom_vline(xintercept = sp_chi2_mean$sp_av2, linetype = "dashed", color = "red") +
+  labs(x = "Total saiga product (kg)", y = "Code name ", title = 'China', tag = "N") +
+  theme(
+    plot.margin = margin(75, 75, 75, 75, "pt"),
+    panel.border = element_rect(color = "black", fill = NA),
+    plot.title = element_text(size = 25, face = "bold", hjust = 0.5, margin = margin(b = 20)),  # Increase the title size
+    plot.tag = element_text(size = 30, face = 'bold'),
+    axis.text.y = element_text(size = 20, margin = margin(r = 12, unit = "pt")),  # Increase the y-axis label size
+    axis.title.x = element_text(size = 25, margin = margin(t = 15, unit = "pt")),  # Increase the x-axis label size
+    axis.title.y = element_text(size = 25, margin = margin(r = 15, unit = "pt")),  # Increase the y-axis label size
+    axis.text.x = element_text(size = 20),  # Increase the interval label size
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major = element_line(color = "grey", linetype = "solid"),
+    panel.grid.minor = element_line(color = "grey", linetype = "solid"),
+  ) +
+  xlim(0, 110000)  # Set the x-axis limits
+
+print(sp_chi2_graph)
+```
+
+## Aggregate stockpile graphs 
+
+```{r, fig.width =20, fig.height =22}
+# Define the caption text
+caption3 <- "Figure 12: Experts' elicitation estimates for annual saiga product stockpiles (kg). Participants present estimates with Round 2 best estimates (grey circles) and associated credible intervals (black horizontal lines). Uncertainy bars have been adjusted to reflect 80% credible intervals for each expert's response. The group mean for each flow is represented (red circle and red dotted line). The mean values for upper and lower bound estimates are also presented (red horizontal lines). The x-axes presented reflect the scales of each response and therefore differ."
+
+
+caption_width2 <- 60
+
+# Split the caption text into multiple lines
+caption_lines3 <- strwrap(caption3, width = caption_width2)
+
+# Create a text grob with wrapped caption
+caption3 <- textGrob(
+  label = paste(caption_lines3, collapse = "\n"), 
+  gp = gpar(fontsize = 25, hjust = 0.5)
+)
+
+# Set the size of the graphs 
+fig_width <- 20
+fig_height <- 25
+
+sp_graphs2 <- grid.arrange(sp_kaz2_graph, sp_mon2_graph, sp_rus2_graph, sp_uzb2_graph, sp_chi2_graph, caption3, ncol = 2, nrow = 3, top = textGrob("Figure 12. Average yearly saiga product stockpiles (kg) in major range, transit and\n end-consumer countries from 2012 to 2022", x = 0.5, y = 0.15, gp = gpar(fontsize = 35, fontface = "bold")))
+
+
+# Combine the graphs and the caption
+sp_graphs2 <- arrangeGrob(sp_graphs2)
+print(sp_graphs2)
+
+# Save the grid of graphs as an image file
+ggsave(filename = "sp_graphs2.png", plot = sp_graphs2, width = fig_width, height = fig_height, units = "in")
+
+```
+
+```{r}
+# Trade flow table 2
+# Create the data for the table
+trade_flow <- c("Mongolia to China", "Kazakhstan to Uzbekistan", "Uzbekistan to Kazakhstan",
+                "Kazakhstan to Russia", "Kazakhstan to China", "Kazakhstan to Kyrgyzstan",
+                "Kyrgyzstan to China", "Vietnam to China", "Russia to China")
+
+mean_lower_bound <- c("3", "1", "3.7",
+                      "22.3", "538.5", "1",
+                      "1", "241.3", "15.2")
+
+mean_upper_bound <- c("19.5", "79.2", "65.5",
+                      "447.2", "5596.7", "4166.7",
+                      "3250", "842.9", "812.7")
+
+mean_best_guess <- c("12.5", "20", "39",
+                     "154", "1940", "1500",
+                     "1250", "500", "192.3")
+
+num_experts <- c(2, 1, 2, 2, 4, 2, 2, 1, 3)
+
+# Create the data frame
+data <- data.frame(Trade_flow = trade_flow,
+                   Mean_lower_bound = mean_lower_bound,
+                   Mean_upper_bound = mean_upper_bound,
+                   Mean_best_guess = mean_best_guess,
+                   Number_of_experts = num_experts)
+
+# Add row names starting from "A" onwards
+row_names <- LETTERS[seq_len(nrow(data))]
+rownames(data) <- row_names
+
+# Format the table using kable and kableExtra
+table_html <- data %>%
+  rename("Trade flow" = Trade_flow, "Mean lower bound" = Mean_lower_bound, "Mean upper bound" = Mean_upper_bound, "Mean best guess" = Mean_best_guess, "Number of experts guessing" = Number_of_experts) %>%
+  knitr::kable(format = "html", row.names = TRUE, caption = "<b>Table 2: Mean lower bound, upper bound, and best guess estimates for the saiga product trade flows collected from the expert elicitation process.</b>  The mean upper and lower bounds were generated from the bounds for each flow, standardised to 80% confidence.") %>%
+  kable_styling(full_width = FALSE)
+
+# Print the formatted table
+print(table_html)
+
+# Calculate the difference between upper and lower bounds
+data$Difference <- as.numeric(data$Mean_upper_bound) - as.numeric(data$Mean_lower_bound)
+
+# Find the flow with the biggest difference
+biggest_difference <- data[which.max(data$Difference), "Trade_flow"]
+
+# Find the flow with the smallest difference
+smallest_difference <- data[which.min(data$Difference), "Trade_flow"]
+
+cat("Flow with the biggest difference:", biggest_difference, "\n")
+cat("Flow with the smallest difference:", smallest_difference, "\n")
+
+```
+
+
+
+
+```{r}
+# Stockpile table 4
+# Create the data for the table
+trade_flow <- c("Kazakhstan", "Mongolia", "Russia",
+                "Uzbekistan", "China")
+
+mean_lower_bound <- c("547.1", "3.8", "1",
+                      "89", "20757.7")
+
+mean_upper_bound <- c("17161.3", "11.8", "150",
+                      "1000", "107142.9")
+
+mean_best_guess <- c("8535", "7", "50",
+                     "380", "50000")
+
+num_experts <- c(2, 1, 1, 1, 1)
+
+# Create the data frame
+data <- data.frame(Trade_flow = trade_flow,
+                   Mean_lower_bound = mean_lower_bound,
+                   Mean_upper_bound = mean_upper_bound,
+                   Mean_best_guess = mean_best_guess,
+                   Number_of_experts = num_experts)
+
+# Add row names starting from "A" onwards
+row_names <- c("J", "K", "L", "M", "N")
+rownames(data) <- row_names
+
+# Format the table using kable and kableExtra
+table_html <- data %>%
+  rename("Country" = Trade_flow, "Mean lower bound" = Mean_lower_bound, "Mean upper bound" = Mean_upper_bound, "Mean best guess" = Mean_best_guess, "Number of experts guessing" = Number_of_experts) %>%
+  knitr::kable(format = "html", row.names = TRUE, caption = "<b>Table 3: Mean lower bound, upper bound, and best guess estimates for the saiga product stockpile volumes collected from the expert elicitation process.</b>  The mean upper and lower bounds were generated from the bounds for each flow, standardised to 80% confidence. The letters J-N refer to the graphs in Figure 12.") %>%
+  kable_styling(full_width = FALSE)
+
+# Print the formatted table
+print(table_html)
+```
