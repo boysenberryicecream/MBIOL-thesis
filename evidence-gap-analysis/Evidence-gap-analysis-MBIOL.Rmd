@@ -1,0 +1,647 @@
+---
+title: "Evidence-gap analysis MBIOL"
+author: "Student No. 1336616"
+date: "2024-05-09"
+output: html_document
+---
+
+# Setup 
+```{r, setup, include = FALSE, message=FALSE, warning=FALSE}
+setwd()
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(tidyverse,ggplot2, dplyr,RColorBrewer,grid,gridExtra,patchwork,ggpubr,rnaturalearth,lubridate, knitr, kableExtra, sf, webshot2)
+# library(ggimage)
+data_raw <- read.csv("final_evidencegap_data_raw.csv", header = TRUE)
+```
+
+```{r, echo=FALSE, warning=FALSE, include=FALSE}
+## Dataframe without data for trade routes, importer, or exporter
+data1 <- data_raw %>%
+  filter(is.na(Trade.routes.listed..use.numbers.) | Trade.routes.listed..use.numbers. == "", is.na(Evidence.of.importer..use.numbers..separated.by.a.comma.) | Evidence.of.importer..use.numbers..separated.by.a.comma. == "", is.na(Evidence.of.exporter..use.numbers..separated.by.a.comma.) | Evidence.of.exporter..use.numbers..separated.by.a.comma. == "")
+
+
+unique(data_raw$Country)
+```
+
+
+```{r, echo=FALSE, warning=FALSE, include=FALSE}
+## Dataframe with data for trade routes, importer, or exporter only 
+data2 <- data_raw %>%
+  filter(if_any(c(Evidence.of.importer..use.numbers..separated.by.a.comma., Evidence.of.exporter..use.numbers..separated.by.a.comma., Trade.routes.listed..use.numbers.), ~ !is.na(.) & . != ""))
+```
+
+
+```{r, echo=FALSE, warning=FALSE, include=FALSE}
+## Separate by trade routes 
+trade_routes <- data2 %>%
+  separate_rows(Trade.routes.listed..use.numbers., sep = ", ", convert = TRUE) %>%
+  mutate(Evidence.of.importer..use.numbers..separated.by.a.comma. = "", Evidence.of.exporter..use.numbers..separated.by.a.comma. = "")
+
+# Create a lookup table with trade routes and names
+traderoute_lookup <- c("1"= "Kazakhstan to Russia",
+        "2"= "Russia to Kazakhstan",
+        "3"= "Kazakhstan to Kyrgyzstan",
+        "4"= "Kyrgyzstan to Kazakhstan",
+        "5"= "Kazakhstan to Uzbekistan",
+        "6"= "Uzbekistan to Kazakhstan",
+        "7"= "Uzbekistan to Kyrgyzstan",
+        "8"= "Kyrgyzstan to China",
+        "9"= "Russia to Mongolia",
+        "10"= "Mongolia to Russia",
+        "11"= "Mongolia to United Kingdom",
+        "12"= "Mongolia to United States of America",
+        "13"= "Mongolia to China",
+        "14"= "Mongolia to Malaysia",
+        "15"= "China to Japan",
+        "16"= "Russia to China",
+        "17"= "Russia to Malaysia",
+        "18"= "Kazakhstan to China",
+        "19"= "Kazakhstan to Singapore",
+        "20"= "Ukraine to China",
+        "21"= "China to New Zealand",
+        "22"= "Malaysia to New Zealand",
+        "23"= "Hong Kong to Japan",
+        "24"= "Malaysia to Hong Kong",
+        "25"= "Singapore to Hong Kong",
+        "26"= "China to Malaysia",
+        "27"= "China to Singapore",
+        "28"= "Vietnam to United States of America",
+        "29"= "China to United Kingdom",
+        "30"= "China to Vietnam",
+        "31"= "Malaysia to Singapore",
+        "32"= "Singapore to Malaysia",
+        "33"= "Singapore to Japan",
+        "34"= "Russia to Singapore",
+        "35"= "China to Hong Kong",
+        "36"= "Hong Kong to China",
+        "37"= "Russia to Japan",
+        "38"= "Kazakhstan to Korea",
+        "39"= "Kazakhstan to Turkey",
+        "40"= "Russia to Hong Kong",
+        "41"= "Kazakhstan to Hong Kong",
+        "42"= "Ukraine to Slovakia",
+        "43"= "Malaysia to United States of America",
+        "44"= "Malaysia to China",
+        "45"= "Hong Kong to Malaysia",
+        "46"= "South Korea to China",
+        "47"= "China to United States of America",
+        "48"= "Uzbekistan to China",
+        "49"= "Singapore to China",
+        "50"= "Hong Kong to Japan",
+        "51"= "Japan to Hong Kong",
+        "52"= "Hong Kong to Singapore",
+        "53"= "Japan to Thailand",
+        "54"= "Hong Kong to Korea",
+        "55"= "Japan to Singapore",
+        "56"= "Korea to Japan",
+        "57"= "Russia to Austria",
+        "58"= "Russia to Belgium",
+        "59"= "Russia to Denmark",
+        "60"= "Russia to Italy",
+        "61"= "Russia to Germany",
+        "62"= "Russia to USA",
+        "63"= "New Zealand to Malaysia",
+        "64"= "Australia to Malaysia",
+        "65"= "Myanmar to Malaysia",
+        "66"= "Kazakhstan to Malaysia",
+        "67"= "Siberia to Singapore",
+        "68"= "China to Thailand",
+        "69"= "China to Philippines")
+
+# Update 'Country' column with full country names based on the codes
+trade_routes$Country <- traderoute_lookup[trade_routes$Trade.routes.listed..use.numbers.]
+
+# Update 'evidence.of.importer' column with 'TRUE' values
+trade_routes$Trade.routes.listed..use.numbers. <- "TRUE"
+
+trade_routes
+```
+
+
+```{r, echo=FALSE, warning=FALSE, include=FALSE}
+## Separate by exporter countries 
+data_separated2 <- data2 %>%
+  separate_rows(Evidence.of.exporter..use.numbers..separated.by.a.comma., sep = ", ", convert = TRUE) %>%  mutate(Evidence.of.importer..use.numbers..separated.by.a.comma. = "", Trade.routes.listed..use.numbers. = "")
+
+unique(data2$Country)
+
+
+# Create a lookup table with country codes and names
+country_lookup <- c("1" = "Canada",
+                    "2" = "China",
+                    "3" = "Japan",
+                    "4" = "Kazakhstan",
+                    "5" = "Kyrgyzstan",
+                    "6" = "Malaysia",
+                    "7" = "Mongolia",
+                    "8" = "New Zealand",
+                    "9" = "Russia",
+                    "10" = "Singapore",
+                    "11" = "Slovenia",
+                    "12" = "Tajikistan",
+                    "13" = "Turkmenistan",
+                    "14" = "Australia",
+                    "15" = "Ukraine",
+                    "16" = "Uzbekistan",
+                    "17" = "Vietnam",
+                    "18" = "Hong Kong",
+                    "19" = "Thailand",
+                    "20" = "Republic of Korea",
+                    "21" = "Canada",
+                    "22" = "Austria",
+                    "23" = "United Kingdom",
+                    "24" = "United States of America",
+                    "25" = "Indonesia",
+                    "26" = "Germany",
+                    "27" = "Netherlands",
+                    "28" = "Turkey",
+                    "29" = "Slovakia",
+                    "30" = "Switzerland",
+                    "31" = "United Arab Emirates",
+                    "32" = "Korea",
+                    "33" = "Czech Republic",
+                    "34" = "Norway",
+                    "35" = "Belgium",
+                    "36" = "Denmark",
+                    "37" = "Italy",
+                    "38" = "Myanmar",
+                    "39" = "Siberia",
+                    "40" = "Philippines")
+
+# Update 'Country' column with full country names based on the codes
+data_separated2$Country <- country_lookup[data_separated2$Evidence.of.exporter..use.numbers..separated.by.a.comma.]
+
+# Update 'evidence.of.importer' column with 'TRUE' values
+data_separated2$Evidence.of.exporter..use.numbers..separated.by.a.comma. <- "1"
+
+```
+
+
+```{r, echo=FALSE, warning=FALSE, include=FALSE}
+## Separate by importer countries 
+data_separated3 <- data2 %>%
+  separate_rows(Evidence.of.importer..use.numbers..separated.by.a.comma., sep = ", ", convert = TRUE) %>%  mutate(Evidence.of.exporter..use.numbers..separated.by.a.comma. = "", Trade.routes.listed..use.numbers. = "")
+
+# Update 'Country' column with full country names based on the codes
+data_separated3$Country <- country_lookup[data_separated3$Evidence.of.importer..use.numbers..separated.by.a.comma.]
+
+# Update 'evidence.of.importer' column with 'TRUE' values
+data_separated3$Evidence.of.importer..use.numbers..separated.by.a.comma. <- "1"
+```
+
+
+```{r, echo=FALSE, warning=FALSE}
+## Bind desired columns into one df 
+combined_data <- bind_rows(data1, data_separated2, data_separated3)
+```
+
+
+```{r, echo=FALSE, warning=FALSE}
+## Save data into new CSV 
+write.csv(combined_data, file = "combined_data.csv")
+write.csv(trade_routes, file = "trade_routes.csv")
+```
+
+
+# Making maps
+```{r ChloroplethMaps, echo=FALSE, warning=FALSE, message=FALSE,}
+# LocationTibble <- PriceDistributionPlotting %>% st_as_sf(coords = c("lon", "lat"), crs = 4326) %>% st_transform(crs = 4326) %>% cbind(st_coordinates(.))
+wrld_simpl<-rnaturalearth::ne_countries(returnclass = "sf")
+
+trade_routes_for_plot = trade_routes %>% separate(Country, into = c("CountryOrigin2", "CountryDest2"), sep = " to ")
+
+ # trade_routes_for_plot$CountryOrigin2 = str_replace(string=trade_routes_for_plot$CountryOrigin, pattern = "USA", replacement = "United States of America")
+# trade_routes_for_plot$CountryDest2 = str_replace(string=trade_routes_for_plot$CountryDest, pattern = "USA", replacement = "United States of America")
+# trade_routes_for_plot$CountryOrigin2 = str_replace(string=trade_routes_for_plot$CountryOrigin, pattern = "USA", replacement = "United States of America") # Can remove this block after cleaning
+
+
+CountryTable = tibble(CountryOriginCount = as.numeric(table(trade_routes_for_plot$CountryOrigin2)), Country=names(table(trade_routes_for_plot$CountryOrigin2))) %>% full_join(tibble(CountryDestCount = as.numeric(table(trade_routes_for_plot$CountryDest2)),Country=names(table(trade_routes_for_plot$CountryDest2))))
+
+# Retrieve world map data
+wrld_simpl <- rnaturalearth::ne_countries(returnclass = "sf")
+
+# Merge world map data with country counts
+Plotting <- wrld_simpl %>% left_join(CountryTable, by = c("sovereignt" = "Country"))
+
+Plotting[Plotting$sovereignt=="Uzbekistan",]
+
+# Plot chloropleth maps
+# Origin
+ggplot(Plotting) + 
+  geom_sf(aes(fill = CountryOriginCount), size = 0.1) + 
+  scale_fill_viridis_c(na.value = "white", name="Count", direction=-1) +
+  theme_void() + 
+  theme(legend.position = "bottom") +
+  ggtitle("Global Distribution of Mentions in Papers Counting the Export/Re-Export of Saiga products")
+
+#Dest
+ggplot(Plotting) + 
+  geom_sf(aes(fill = CountryDestCount), size = 0.1) + 
+  scale_fill_viridis_c(option = "plasma", na.value = "white", name="Count", direction = -1) +
+  theme_void() + 
+  theme(legend.position = "bottom") +
+  ggtitle("Global Distribution of Mentions in Papers Counting the Importers of Saiga products")
+
+CountryTable %>% select(Country,CountryOriginCount,CountryDestCount) %>% 
+  rename("Export" = CountryOriginCount, "Import" = CountryDestCount) %>% 
+  knitr::kable(format = "html") %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+
+
+### Heatmap of ISR Scores ###
+
+```{r Heatmap, echo=FALSE, warning=FALSE, fig.height=10, fig.width=6, results=FALSE}
+combined_data <- bind_rows(data1, data_separated2, data_separated3)
+combined_data$StartDateFormatted <- dmy(paste0("01/01",combined_data$Start.date))
+combined_data$EndDateFormatted <- dmy(paste0("01/01",combined_data$End.date))
+# combined_data$Country <- str_remove(string = combined_data$Country, pattern = " ")
+combined_data$Country <- str_replace(string = combined_data$Country, pattern = "Viet Nam", replacement = "Vietnam")
+combined_data$Country <- trimws(combined_data$Country)
+
+ISRScores = combined_data %>%
+  dplyr::select(Country, Relative.combined.ISR.score, StartDateFormatted, EndDateFormatted) %>%
+  na.omit() %>%
+  mutate(
+    dummy_1995_2005 = if_else(EndDateFormatted <= ymd("2005-12-31"), 1, 0), # can tweak the dates here
+    dummy_2006_2015 = if_else(StartDateFormatted >= ymd("2006-01-01") & EndDateFormatted <= ymd("2015-12-31"), 1, 0),
+    dummy_2015_present = if_else(StartDateFormatted >= ymd("2016-01-01") & EndDateFormatted <= ymd("2023-12-31"), 1, 0),
+    dummy_current = if_else(EndDateFormatted >= ymd("2023-01-01"), 1, 0),
+    Score_1995_2005 = dummy_1995_2005 * Relative.combined.ISR.score,
+    Score_2006_2015 = dummy_2006_2015 * Relative.combined.ISR.score,
+    Score_2015_present = dummy_2015_present * Relative.combined.ISR.score,
+    Score_current = dummy_current * Relative.combined.ISR.score
+  ) %>%
+  dplyr::select(Country, contains("Score")) %>%
+  group_by(Country) %>%
+  summarise(
+    Score_1995_2005 = max(Score_1995_2005),
+    Score_2006_2015 = max(Score_2006_2015),
+    Score_2015_present = max(Score_2015_present),
+    Score_current = max(Score_current))
+
+plotting = ISRScores %>% pivot_longer(cols = starts_with("Score"), names_to = "variable", values_to = "value")
+
+ggplot(plotting, aes(y = factor(Country, levels=rev(unique(Country))), x = factor(variable), fill = value)) +
+  geom_tile() +
+  scale_fill_viridis_c() +
+  labs(title = "Genereal ISR Scores Heatmap",
+       y = "Country",
+       x = " ",
+       fill = "Score") +
+  scale_x_discrete(position = "top", labels=c("Pre-2005","2006-15", "2015-2024", "Current")) +
+  theme_minimal() +
+  theme(axis.text.y = element_text(angle = 0, hjust = 1), # Adjust y-axis text alignment
+        axis.title.y = element_text(margin = margin(t = 0, r = 0, b = 10, l = 0)), # Adjust y-axis title position
+        axis.ticks.y = element_blank(),  # Remove y-axis ticks
+        panel.grid.major = element_blank(), # Remove major gridlines
+        panel.grid.minor = element_blank(), # Remove minor gridlines
+        plot.title = element_text(hjust = 0.5))  # Center the plot title
+```
+
+```{r HarvesterHeatmap, echo=FALSE, warning=FALSE, results=FALSE}
+
+HDD <- combined_data$StartDateFormatted <- dmy(paste0("01/01",combined_data$Start.date))
+combined_data$EndDateFormatted <- dmy(paste0("01/01",combined_data$End.date))
+combined_data$Country <- str_remove(string = combined_data$Country, pattern = " ")
+HDD = combined_data %>%
+  filter(Country %in% c("Russia","Uzbekistan","Kazakhstan","Mongolia")) %>% #selected countries
+  dplyr::select(Country, Relative.combined.ISR.score, StartDateFormatted, EndDateFormatted, 27:47) %>% #selected questions 
+  na.omit() %>%
+  mutate(
+    dummy_1995_2005 = if_else(EndDateFormatted <= ymd("2005-12-31"), 1, 0), # can tweak the dates here
+    dummy_2006_2015 = if_else(StartDateFormatted >= ymd("2006-01-01") & EndDateFormatted <= ymd("2015-12-31"), 1, 0),
+    dummy_2015_present = if_else(StartDateFormatted >= ymd("2016-01-01") & EndDateFormatted <= ymd("2023-12-31"), 1, 0),
+    dummy_current = if_else(EndDateFormatted >= ymd("2023-01-01"), 1, 0),
+    Score_1995_2005 = dummy_1995_2005 * Relative.combined.ISR.score,
+    Score_2006_2015 = dummy_2006_2015 * Relative.combined.ISR.score,
+    Score_2015_present = dummy_2015_present * Relative.combined.ISR.score,
+    Score_current = dummy_current * Relative.combined.ISR.score
+  ) 
+
+
+colnames(HDD) = c("Country", "Relative.combined.ISR.score", "StartDateFormatted", "EndDateFormatted", "Seizure.information", "Harvester demography", "Number of harvesters", "Supply-side market structure",                     
+"Harvester responsiveness to market sensitivity", "National market size (supply)", "International market size (supply)", "Places of hunting",                           "Parts of saiga hunted", "Harvester perceptions on saiga conservation", "Harvester perceptions on saiga trade", "Reasons for hunting",                                "Pattern of hunting within/across years", "Method of hunting/gathering", "Supply-side trade hotspots",                            "Supply-side prices for products", "Supply-end trade routes", "Strength/presence of law enforcement initiatives", "Ability/likelihood for harvesters to evade law enforcement", "Supply-end stockpile estimates/assessments", "Harvester approach to substitutes", "dummy_1995_2005", "dummy_2006_2015", "dummy_2015_present", "dummy_current", "Score_1995_2005", "Score_2006_2015", "Score_2015_present","Score_current")                             
+
+multiplier_columns <- c("Score_1995_2005", "Score_2006_2015", "Score_2015_present","Score_current")
+columns = colnames(HDD)[6:25]
+countries = HDD$Country
+
+AllCountriesHunterData = tibble(Country=countries)
+
+for(i in columns){
+    columnA = HDD[,i] * HDD[,"Score_1995_2005"]
+    columnB = HDD[,i] * HDD[,"Score_2006_2015"]
+    columnC = HDD[,i] * HDD[,"Score_2015_present"]
+    columnD = HDD[,i] * HDD[,"Score_current"]
+    
+    Temp = tibble(columnA,columnB,columnC,columnD)
+  
+    Name_column_A <- paste0(i, "Score_1995_2005")
+    Name_column_B <- paste0(i, "Score_2006_2015")
+    Name_column_C <- paste0(i, "Score_2016_2024")
+    Name_column_D <- paste0(i, "Score_current")
+    
+    Temp2 = Temp %>%
+      rename_with(~ Name_column_A, .cols = starts_with("columnA")) %>%
+  rename_with(~ Name_column_B, .cols = starts_with("columnB")) %>%
+  rename_with(~ Name_column_C, .cols = starts_with("columnC")) %>%
+  rename_with(~ Name_column_D, .cols = starts_with("columnD"))
+    
+    AllCountriesHunterData = cbind(AllCountriesHunterData,Temp2)
+}
+
+dataPlot = AllCountriesHunterData %>%
+  pivot_longer(cols = -Country, names_to = "QuestionScore",values_to = "ISRvalue") %>%
+  separate(QuestionScore,into = c("Question", "Date"), sep = "Score_") %>%
+  mutate(CountryDate = paste0(Country,Date)) %>%
+  dplyr::select(-Country,-Date) %>%
+  group_by(CountryDate,Question) %>%
+  summarise(across(everything(),~ max(.)))
+
+dataPlot$CountryDate <- factor(dataPlot$CountryDate, levels = unique(dataPlot$CountryDate))
+
+# Create the heatmap
+Harvester <- ggplot(dataPlot, aes(x = CountryDate, y = Question, fill = ISRvalue)) +
+  geom_tile() +
+  scale_fill_viridis_c(na.value = "lightgrey",begin=0,end=1) +
+  labs(title = "Supply-end (Harvester) Heatmap of ISR Values by Country and Question",
+       x = "Country",
+       y = "Supply Chain Question",
+       fill = "ISR Value") +
+  theme_minimal() +
+  scale_x_discrete(position = "top") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 5),
+        plot.title = element_text(size = 8, face = "bold"),
+        strip.placement = "outside",  # Position strip labels outside the plot
+        strip.background = element_blank())
+
+ggsave("yourwd/harvester.png", Harvester, width = 8, height = 5)
+
+```
+```{r IntermediaryHeatmap, echo=FALSE, warning=FALSE, fig.width =11, fig.height=4, results=FALSE}
+HDD = combined_data %>%
+  filter(Country %in% c("Russia","Uzbekistan","Kazakhstan","Mongolia", "Ukraine", "Vietnam", "Singapore", "Malaysia", "HongKong", "China", "Japan", "Thailand", "Kyrgyzstan")) %>% #selected countries
+  dplyr::select(Country, Relative.combined.ISR.score, StartDateFormatted, EndDateFormatted, 49:62) %>% #selected questions 
+  na.omit() %>%
+  mutate(
+    dummy_1995_2005 = if_else(EndDateFormatted <= ymd("2005-12-31"), 1, 0), # can tweak the dates here
+    dummy_2006_2015 = if_else(StartDateFormatted >= ymd("2006-01-01") & EndDateFormatted <= ymd("2015-12-31"), 1, 0),
+    dummy_2015_present = if_else(StartDateFormatted >= ymd("2016-01-01") & EndDateFormatted <= ymd("2023-12-31"), 1, 0),
+    dummy_current = if_else(EndDateFormatted >= ymd("2023-01-01"), 1, 0),
+    Score_1995_2005 = dummy_1995_2005 * Relative.combined.ISR.score,
+    Score_2006_2015 = dummy_2006_2015 * Relative.combined.ISR.score,
+    Score_2015_present = dummy_2015_present * Relative.combined.ISR.score,
+    Score_current = dummy_current * Relative.combined.ISR.score
+  ) 
+
+HDD
+
+colnames(HDD) = c("Country", "Relative.combined.ISR.score", "StartDateFormatted", "EndDateFormatted",                                         "Intermediary demography", "Do harvesters and intermediaries share roles?", "Number of intermediaries",                                         "Intermediary responsiveness to market sensitivity", "Intermediary places of operation", "Specifics of intermediary activity",                     "Intermediary perceptions on saiga trade", "Intermediary reasons for participating", "Intermediary pattern of activity",                      "Intermediary trading hotspots/routes", "Prices paid to/by intermediaries for products", "Intermediary ability to evade law enforcement",            "Intermediary-directed strength and/or presence of law enforcement", "Intermediary stockpile assessments", "dummy_1995_2005", "dummy_2006_2015", "dummy_2015_present", "dummy_current", "Score_1995_2005", "Score_2006_2015", "Score_2015_present","Score_current")                  
+  
+multiplier_columns <- c("Score_1995_2005", "Score_2006_2015", "Score_2015_present","Score_current")
+columns = colnames(HDD)[5:18]
+countries = HDD$Country
+
+AllCountriesHunterData = tibble(Country=countries)
+
+for(i in columns){
+    columnA = HDD[,i] * HDD[,"Score_1995_2005"]
+    columnB = HDD[,i] * HDD[,"Score_2006_2015"]
+    columnC = HDD[,i] * HDD[,"Score_2015_present"]
+    columnD = HDD[,i] * HDD[,"Score_current"]
+    
+    Temp = tibble(columnA,columnB,columnC,columnD)
+  
+    Name_column_A <- paste0(i, "Score_1995_2005")
+    Name_column_B <- paste0(i, "Score_2006_2015")
+    Name_column_C <- paste0(i, "Score_2015_2024")
+    Name_column_D <- paste0(i, "Score_current")
+    
+    Temp2 = Temp %>%
+      rename_with(~ Name_column_A, .cols = starts_with("columnA")) %>%
+  rename_with(~ Name_column_B, .cols = starts_with("columnB")) %>%
+  rename_with(~ Name_column_C, .cols = starts_with("columnC")) %>%
+  rename_with(~ Name_column_D, .cols = starts_with("columnD"))
+    
+    AllCountriesHunterData = cbind(AllCountriesHunterData,Temp2)
+}
+
+dataPlot = AllCountriesHunterData %>%
+  pivot_longer(cols = -Country, names_to = "QuestionScore",values_to = "ISRvalue") %>%
+  separate(QuestionScore,into = c("Question", "Date"), sep = "Score_") %>%
+  mutate(CountryDate = paste0(Country,Date)) %>%
+  dplyr::select(-Country,-Date) %>%
+  group_by(CountryDate,Question) %>%
+  summarise(across(everything(),~ max(.)))
+
+dataPlot = AllCountriesHunterData %>%
+  pivot_longer(cols = -Country, names_to = "QuestionScore",values_to = "ISRvalue") %>%
+  separate(QuestionScore,into = c("Question", "Date"), sep = "Score_") %>%
+  mutate(CountryDate = paste0(Country,Date)) %>%
+  dplyr::select(-Country,-Date) %>%
+  group_by(CountryDate,Question) %>%
+  summarise(across(everything(),~ max(.)))
+
+dataPlot$CountryDate <- factor(dataPlot$CountryDate, levels = unique(dataPlot$CountryDate))
+# Create the heatmap
+intermediary <- ggplot(dataPlot, aes(x = CountryDate, y = Question, fill = ISRvalue)) +
+  geom_tile() +
+  scale_fill_viridis_c(na.value = "lightgrey",begin=0,end=1) +
+  labs(title = "Intermediary Heatmap of ISR Values by Country and Question",
+       x = "Country",
+       y = "Supply Chain Question",
+       fill = "ISR Value") +
+  theme_minimal() +
+  scale_x_discrete(position = "top") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 5),
+        plot.title = element_text(size = 10, face = "bold"),
+        strip.placement = "outside",  # Position strip labels outside the plot
+        strip.background = element_blank())
+
+ggsave("yourwd/intermediary.png", intermediary, width = 11, height = 4)
+```
+
+```{r VendorHeatmap, echo=FALSE, warning=FALSE, results=FALSE, fig.width=10, fig.height=4}
+HDD = combined_data %>%
+  filter(Country %in% c("Russia","Uzbekistan","Kazakhstan","Mongolia", "Ukraine", "Vietnam", "Singapore", "Malaysia", "HongKong", "China", "Japan", "Thailand")) %>% #selected countries
+  dplyr::select(Country, Relative.combined.ISR.score, StartDateFormatted, EndDateFormatted, 62:77) %>% #selected questions 
+  na.omit() %>%
+ mutate(
+    dummy_1995_2005 = if_else(EndDateFormatted <= ymd("2005-12-31"), 1, 0), # can tweak the dates here
+    dummy_2006_2015 = if_else(StartDateFormatted >= ymd("2006-01-01") & EndDateFormatted <= ymd("2015-12-31"), 1, 0),
+    dummy_2015_present = if_else(StartDateFormatted >= ymd("2016-01-01") & EndDateFormatted <= ymd("2023-12-31"), 1, 0),
+    dummy_current = if_else(EndDateFormatted >= ymd("2023-01-01"), 1, 0),
+    Score_1995_2005 = dummy_1995_2005 * Relative.combined.ISR.score,
+    Score_2006_2015 = dummy_2006_2015 * Relative.combined.ISR.score,
+    Score_2015_present = dummy_2015_present * Relative.combined.ISR.score,
+    Score_current = dummy_current * Relative.combined.ISR.score
+) 
+
+
+colnames(HDD) = c("Country", "Relative.combined.ISR.score", "StartDateFormatted", "EndDateFormatted",                                     "Vending format (in-person/online?)", "Vendor quantities sold", "Vendor responsiveness to markey sensitivity", "Vendor product type sold", "Vendor demography",                                       
+"Do harvesters and vendors share roles?", "Number of vendors", "Vendor perceptions on saiga and trade",                    "Reasons for partaking as a vendor", "Pattern of vendor activity within/across years", "Vendor trading hotspots/routes",                         
+"Prices paid to/by vendors for products", "Vendor ability to evade law enforcement", "Vendor-directed strength/presence of law enforcement", "Vendor stockpile assessments/estimates",                  
+"Vendor approach to substitutes", "dummy_1995_2005", "dummy_2006_2015", "dummy_2015_present", "dummy_current", "Score_1995_2005", "Score_2006_2015", "Score_2015_present","Score_current") 
+
+
+multiplier_columns <- c("Score_1995_2005", "Score_2006_2015", "Score_2015_present","Score_current")
+columns = colnames(HDD)[5:18]
+countries = HDD$Country
+
+AllCountriesHunterData = tibble(Country=countries)
+
+for(i in columns){
+    columnA = HDD[,i] * HDD[,"Score_1995_2005"]
+    columnB = HDD[,i] * HDD[,"Score_2006_2015"]
+    columnC = HDD[,i] * HDD[,"Score_2015_present"]
+    columnD = HDD[,i] * HDD[,"Score_current"]
+    
+    Temp = tibble(columnA,columnB,columnC,columnD)
+  
+    Name_column_A <- paste0(i, "Score_1995_2005")
+    Name_column_B <- paste0(i, "Score_2006_2015")
+    Name_column_C <- paste0(i, "Score_2015_2024")
+    Name_column_D <- paste0(i, "Score_current")
+    
+    Temp2 = Temp %>%
+      rename_with(~ Name_column_A, .cols = starts_with("columnA")) %>%
+  rename_with(~ Name_column_B, .cols = starts_with("columnB")) %>%
+  rename_with(~ Name_column_C, .cols = starts_with("columnC")) %>%
+  rename_with(~ Name_column_D, .cols = starts_with("columnD"))
+    
+    AllCountriesHunterData = cbind(AllCountriesHunterData,Temp2)
+}
+
+dataPlot = AllCountriesHunterData %>%
+  pivot_longer(cols = -Country, names_to = "QuestionScore",values_to = "ISRvalue") %>%
+  separate(QuestionScore,into = c("Question", "Date"), sep = "Score_") %>%
+  mutate(CountryDate = paste0(Country,Date)) %>%
+  dplyr::select(-Country,-Date) %>%
+  group_by(CountryDate,Question) %>%
+  summarise(across(everything(),~ max(.)))
+
+dataPlot = AllCountriesHunterData %>%
+  pivot_longer(cols = -Country, names_to = "QuestionScore",values_to = "ISRvalue") %>%
+  separate(QuestionScore,into = c("Question", "Date"), sep = "Score_") %>%
+  mutate(CountryDate = paste0(Country,Date)) %>%
+  dplyr::select(-Country,-Date) %>%
+  group_by(CountryDate,Question) %>%
+  summarise(across(everything(),~ max(.)))
+
+dataPlot$CountryDate <- factor(dataPlot$CountryDate, levels = unique(dataPlot$CountryDate))
+
+# Create the heatmap
+vendor <- ggplot(dataPlot, aes(x = CountryDate, y = Question, fill = ISRvalue)) +
+  geom_tile() +
+  scale_fill_viridis_c(na.value = "lightgrey",begin=0,end=1) +
+  labs(title = "Vendor Heatmap of ISR Values by Country and Question",
+       x = "Country",
+       y = "Supply Chain Question",
+       fill = "ISR Value") +
+  theme_minimal() +
+  scale_x_discrete(position = "top") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 5),
+        plot.title = element_text(size = 8, face = "bold"),
+        strip.placement = "outside",  # Position strip labels outside the plot
+        strip.background = element_blank())
+
+ggsave("yourwd/vendor.png", vendor, width = 10, height = 4)
+
+
+```
+
+```{r ConsumerHeatmap, echo=FALSE, warning=FALSE, results=FALSE, fig.width = 12, fig.height =5}
+HDD = combined_data %>%
+  filter(Country %in% c("Russia","Uzbekistan","Kazakhstan","Mongolia", "Vietnam", "Singapore", "Malaysia", "HongKong", "China", "Japan", "Thailand", "Australia", "UnitedStatesofAmerica", "NewZealand")) %>% #selected countries
+  dplyr::select(Country, Relative.combined.ISR.score, StartDateFormatted, EndDateFormatted, 77:97) %>% #selected questions 
+  na.omit() %>%
+  mutate(
+    dummy_1995_2005 = if_else(EndDateFormatted <= ymd("2005-12-31"), 1, 0), # can tweak the dates here
+    dummy_2006_2015 = if_else(StartDateFormatted >= ymd("2006-01-01") & EndDateFormatted <= ymd("2015-12-31"), 1, 0),
+    dummy_2015_present = if_else(StartDateFormatted >= ymd("2016-01-01") & EndDateFormatted <= ymd("2023-12-31"), 1, 0),
+    dummy_current = if_else(EndDateFormatted >= ymd("2023-01-01"), 1, 0),
+    Score_1995_2005 = dummy_1995_2005 * Relative.combined.ISR.score,
+    Score_2006_2015 = dummy_2006_2015 * Relative.combined.ISR.score,
+    Score_2015_present = dummy_2015_present * Relative.combined.ISR.score,
+    Score_current = dummy_current * Relative.combined.ISR.score
+) 
+
+colnames(HDD) = c("Country", "Relative.combined.ISR.score",                                                    "StartDateFormatted", "EndDateFormatted",                                                            "Vendor approach to substitutes", "End-consumer demography", "Do harvesters and consumers share the same roles?", "Types of product consumed",    "Consumer purchasing habits (including in-person/online)", "Is consumer demand influencing markets?",                      "Number/proportion of consumers", "Consumer places of purchase (specific)",                                        "Consumer places of purchase (generic)", "Consumer perceptions of saiga conservation",                          
+"Consumer perceptions on saiga trade",                                            
+"Reasons for consuming",                                                       
+"Pattern and/or frequency of consumer activity",                                  
+"Prices paid for products by consumers",                                        
+"Consumer ability to evade law enforcement",                                    
+"Consumer strength/presence of law enforcement initiatives",                  
+"Consumer stockpile information/assessments",                                              
+"End market size", "End market trade routes hotspots",                                            "Consumer approaches to substitutes", "Consumer responsiveness to market sensitivity", "dummy_1995_2005", "dummy_2006_2015", "dummy_2015_present", "dummy_current", "Score_1995_2005", "Score_2006_2015", "Score_2015_present","Score_current") 
+
+multiplier_columns <- c("Score_1995_2005", "Score_2006_2015", "Score_2015_present", "Score_current")
+columns = colnames(HDD)[6:25]
+countries = HDD$Country
+
+AllCountriesHunterData = tibble(Country=countries)
+
+for(i in columns){
+    columnA = HDD[,i] * HDD[,"Score_1995_2005"]
+    columnB = HDD[,i] * HDD[,"Score_2006_2015"]
+    columnC = HDD[,i] * HDD[,"Score_2015_present"]
+    columnD = HDD[,i] * HDD[,"Score_current"]
+    
+    Temp = tibble(columnA,columnB,columnC,columnD)
+  
+    Name_column_A <- paste0(i, "Score_1995_2005")
+    Name_column_B <- paste0(i, "Score_2006_2015")
+    Name_column_C <- paste0(i, "Score_2015_2024")
+    Name_column_D <- paste0(i, "Score_current")
+    
+    Temp2 = Temp %>%
+      rename_with(~ Name_column_A, .cols = starts_with("columnA")) %>%
+  rename_with(~ Name_column_B, .cols = starts_with("columnB")) %>%
+  rename_with(~ Name_column_C, .cols = starts_with("columnC")) %>%
+  rename_with(~ Name_column_D, .cols = starts_with("columnD"))
+    
+    AllCountriesHunterData = cbind(AllCountriesHunterData,Temp2)
+}
+
+dataPlot = AllCountriesHunterData %>%
+  pivot_longer(cols = -Country, names_to = "QuestionScore",values_to = "ISRvalue") %>%
+  separate(QuestionScore,into = c("Question", "Date"), sep = "Score_") %>%
+  mutate(CountryDate = paste0(Country,Date)) %>%
+  dplyr::select(-Country,-Date) %>%
+  group_by(CountryDate,Question) %>%
+  summarise(across(everything(),~ max(.)))
+
+dataPlot = AllCountriesHunterData %>%
+  pivot_longer(cols = -Country, names_to = "QuestionScore",values_to = "ISRvalue") %>%
+  separate(QuestionScore,into = c("Question", "Date"), sep = "Score_") %>%
+  mutate(CountryDate = paste0(Country,Date)) %>%
+  dplyr::select(-Country,-Date) %>%
+  group_by(CountryDate,Question) %>%
+  summarise(across(everything(),~ max(.)))
+
+dataPlot$CountryDate <- factor(dataPlot$CountryDate, levels = unique(dataPlot$CountryDate))
+
+# Create the heatmap
+consumer = ggplot(dataPlot, aes(x = CountryDate, y = Question, fill = ISRvalue)) +
+  geom_tile() +
+  scale_fill_viridis_c(na.value = "lightgrey",begin=0,end=1) +
+  labs(title = "End-consumer Heatmap of ISR Values by Country and Question",
+       x = "Country",
+       y = "Supply Chain Question",
+       fill = "ISR Value") +
+  theme_minimal() +
+  scale_x_discrete(position = "top") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 5),
+        plot.title = element_text(size = 10, face = "bold"),
+        strip.placement = "outside",  # Position strip labels outside the plot
+        strip.background = element_blank())
+
+ggsave("yourwd/consumer.png", consumer, width = 12, height = 5)
+
+```
+
+
